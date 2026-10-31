@@ -1197,9 +1197,52 @@ html_code = '''<!DOCTYPE html>
       .btn-icon span {
         display: none;
       }
+      /* 頂部導覽列：去除毛玻璃模糊遮罩、縮小高度與內距，避免切斷與模糊下方星球 */
+      .hud-header {
+        padding: 8px 12px;
+        background: rgba(2, 4, 10, 0.85);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      }
+      .brand-group {
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+      }
+      .badge-year {
+        padding: 3px 6px;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+      .title-box {
+        min-width: 0;
+      }
+      /* 標題強制單行橫排，防止字體被壓縮折行成垂直直排 */
+      .title-box h1 {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: 0.5px;
+      }
+      .title-box p {
+        display: none;
+      }
+      .hud-controls {
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .btn-icon {
+        padding: 6px 8px;
+      }
+      .btn-icon span {
+        display: none;
+      }
+
+      /* 徹底隱藏浮動計數面板（不要條棟面板記數） */
       .telemetry-hud {
-        top: 66px;
-        left: 16px;
+        display: none !important;
       }
       .spatial-champ {
         display: none;
@@ -1218,20 +1261,39 @@ html_code = '''<!DOCTYPE html>
       .seal-sub {
         display: none;
       }
+      /* 底部賽區圖塊按鈕：寬度自適應、文字完整清晰不被截斷 */
       .nav-orbs {
-        gap: 8px;
+        gap: 6px;
+        width: 100%;
+        padding: 0 4px;
       }
       .orb-tab {
-        min-width: 120px;
-        padding: 8px 10px;
+        flex: 1;
+        min-width: 0;
+        padding: 6px 4px;
+        gap: 6px;
       }
       .orb-tab-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 15px;
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .orb-tab-info {
+        min-width: 0;
+        flex: 1;
+      }
+      .orb-tab-info .tab-sub {
+        font-size: 8px;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
       }
       .orb-tab-info .tab-title {
         font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
       }
     }
   </style>
@@ -1711,7 +1773,8 @@ html_code = '''<!DOCTYPE html>
       scene.fog = new THREE.FogExp2(0x02040a, 0.0035);
 
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1200);
-      camera.position.set(0, 15, 48);
+      const isMobile = window.innerWidth <= 768;
+      camera.position.set(0, isMobile ? 10 : 15, isMobile ? 90 : 48);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -2344,10 +2407,11 @@ html_code = '''<!DOCTYPE html>
       gsap.killTweensOf(camera.position);
       gsap.killTweensOf(controls.target);
 
+      const isMobile = window.innerWidth <= 768;
       gsap.to(camera.position, {
         x: 0,
-        y: 15,
-        z: 48,
+        y: isMobile ? 10 : 15,
+        z: isMobile ? 90 : 48,
         duration: 1.5,
         ease: "power3.inOut"
       });
