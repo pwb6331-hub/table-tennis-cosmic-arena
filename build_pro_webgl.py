@@ -443,6 +443,61 @@ html_code = '''<!DOCTYPE html>
     /* ========================================================================
        BOTTOM-RIGHT OFFICIAL SIGNATURE SEAL (連江縣桌球委員會 落款字樣)
        ======================================================================== */
+    /* Bottom-Left External Visitor Counter */
+    .visitor-counter-seal {
+      position: absolute;
+      bottom: 22px;
+      left: 26px;
+      z-index: 25;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(10, 18, 36, 0.92) 0%, rgba(5, 10, 22, 0.96) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.48);
+      border-left: 3px solid #00f0ff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), 0 0 18px rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .visitor-emblem {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.22) 0%, rgba(0, 170, 255, 0.05) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .visitor-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .visitor-main {
+      font-size: 12px;
+      font-weight: 800;
+      color: #00f0ff;
+      letter-spacing: 1px;
+    }
+
+    .visitor-badge-wrap {
+      display: flex;
+      align-items: center;
+    }
+
+    .visitor-badge-img {
+      height: 18px;
+      border-radius: 3px;
+    }
+
     .map-signature-seal {
       position: absolute;
       bottom: 22px;
@@ -1252,6 +1307,23 @@ html_code = '''<!DOCTYPE html>
       .controls-hint {
         display: none;
       }
+      .visitor-counter-seal {
+        bottom: 82px;
+        left: 10px;
+        padding: 5px 8px;
+        gap: 6px;
+      }
+      .visitor-emblem {
+        width: 24px;
+        height: 24px;
+        font-size: 13px;
+      }
+      .visitor-main {
+        font-size: 11px;
+      }
+      .visitor-badge-img {
+        height: 16px;
+      }
       .map-signature-seal {
         bottom: 92px;
         right: 14px;
@@ -1388,6 +1460,17 @@ html_code = '''<!DOCTYPE html>
     </header>
 
     <!-- Telemetry HUD Deleted -->
+
+    <!-- Bottom-Left External Visitor Counter (左下角外部連線計數器) -->
+    <div class="visitor-counter-seal" title="外部連線與參觀人次計數">
+      <div class="visitor-emblem">🌐</div>
+      <div class="visitor-text-group">
+        <div class="visitor-main">外部連線計數</div>
+        <div class="visitor-badge-wrap">
+          <img src="https://api.visitorbadge.io/api/visitors?path=pwb6331-hub/table-tennis-cosmic-arena&label=VISITORS&labelColor=0a1224&countColor=00f0ff&style=flat" alt="Visitor Counter" class="visitor-badge-img">
+        </div>
+      </div>
+    </div>
 
     <!-- Bottom-Right Official Signature Seal (地圖右下角「連江縣桌球委員會」落款字樣) -->
     <div class="map-signature-seal" title="承辦單位：連江縣桌球委員會">
