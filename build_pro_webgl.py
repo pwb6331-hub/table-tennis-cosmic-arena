@@ -54,11 +54,94 @@ html_code = '''<!DOCTYPE html>
     body, html {
       width: 100%;
       height: 100%;
+      height: 100dvh;
       overflow: hidden;
       background-color: var(--bg-dark);
       font-family: var(--font-tc);
       color: var(--text-main);
       touch-action: none;
+    }
+
+    /* QR Code Share Modal for Mobile/Tablet/Desktop Connection */
+    .qr-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 220;
+      background: rgba(2, 4, 10, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .qr-modal.active {
+      display: flex;
+    }
+    .qr-card {
+      background: rgba(10, 18, 36, 0.98);
+      border: 1px solid var(--primary);
+      border-radius: 18px;
+      padding: 26px 28px;
+      max-width: 420px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.3);
+      text-align: center;
+    }
+    .qr-card h3 {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+    .qr-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .qr-box {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .qr-box img {
+      width: 200px;
+      height: 200px;
+      display: block;
+    }
+    .qr-url-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: var(--font-tech);
+      font-size: 12px;
+      color: var(--primary);
+      word-break: break-all;
+      user-select: all;
+      -webkit-user-select: all;
+    }
+    .qr-actions {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+    .qr-actions button {
+      flex: 1;
+      justify-content: center;
+      padding: 10px 14px;
     }
 
     #webgl-canvas {
@@ -1132,6 +1215,11 @@ html_code = '''<!DOCTYPE html>
           <span>🪐 全景星圖</span>
         </button>
 
+        <button class="btn-icon" id="btn-qr" title="手機/平板/桌機 GitHub 連線網址與 QR Code">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 17h2v2h-2zM19 19h2v2h-2zM15 19h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2z"/></svg>
+          <span>📱 跨裝置連線</span>
+        </button>
+
         <button class="btn-icon" id="btn-fullscreen" title="全螢幕切換">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
         </button>
@@ -1214,6 +1302,22 @@ html_code = '''<!DOCTYPE html>
   <!-- Lightbox -->
   <div class="lightbox-overlay" id="lightbox">
     <img class="lightbox-img" id="lightbox-img" src="" alt="高解析照片預覽">
+  </div>
+
+  <!-- Cross-Device GitHub Pages QR Modal -->
+  <div class="qr-modal" id="qr-modal">
+    <div class="qr-card">
+      <h3>📱 手機／平板／桌機 GitHub 連線</h3>
+      <p>使用手機或平板相機掃描下方 QR Code，或直接點擊複製網址，即可跨裝置開啟 3D 星際太空展館：</p>
+      <div class="qr-box">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://pwb6331-hub.github.io/table-tennis-cosmic-arena/" alt="GitHub Pages QR Code">
+      </div>
+      <div class="qr-url-box" id="github-url-text">https://pwb6331-hub.github.io/table-tennis-cosmic-arena/</div>
+      <div class="qr-actions">
+        <button class="btn-icon active" id="btn-copy-url">📋 複製 GitHub 網址</button>
+        <button class="btn-icon" id="btn-close-qr">關閉</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -2478,6 +2582,40 @@ html_code = '''<!DOCTYPE html>
         e.preventDefault();
         rallyProgress = 0.99;
       }
+    });
+
+    // Unlock Web Audio API on first mobile/tablet touch or desktop click
+    const unlockAudio = () => {
+      soundSystem.init();
+      if (soundSystem.ctx && soundSystem.ctx.state === 'suspended') {
+        soundSystem.ctx.resume();
+      }
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+
+    // Cross-Device QR Modal handlers
+    const qrModal = document.getElementById('qr-modal');
+    const btnQr = document.getElementById('btn-qr');
+    const btnCloseQr = document.getElementById('btn-close-qr');
+    const btnCopyUrl = document.getElementById('btn-copy-url');
+    const githubUrl = "https://pwb6331-hub.github.io/table-tennis-cosmic-arena/";
+
+    btnQr.addEventListener('click', () => {
+      soundSystem.playPing(1180, 0.06, false, 0);
+      qrModal.classList.add('active');
+    });
+    btnCloseQr.addEventListener('click', () => {
+      qrModal.classList.remove('active');
+    });
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) qrModal.classList.remove('active');
+    });
+    btnCopyUrl.addEventListener('click', () => {
+      navigator.clipboard.writeText(githubUrl).then(() => {
+        btnCopyUrl.textContent = "✅ 已複製網址！";
+        setTimeout(() => { btnCopyUrl.textContent = "📋 複製 GitHub 網址"; }, 2000);
+      });
     });
 
     window.addEventListener('load', initWebGL);
