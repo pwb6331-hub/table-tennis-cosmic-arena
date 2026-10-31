@@ -380,6 +380,7 @@ html_code = '''<!DOCTYPE html>
 
     /* Telemetry & Rally Stats HUD */
     .telemetry-hud {
+      display: none !important;
       position: absolute;
       top: 84px;
       left: 26px;
@@ -1242,6 +1243,7 @@ html_code = '''<!DOCTYPE html>
 
       /* 徹底隱藏浮動計數面板（不要條棟面板記數） */
       .telemetry-hud {
+      display: none !important;
         display: none !important;
       }
       .spatial-champ {
@@ -1385,17 +1387,7 @@ html_code = '''<!DOCTYPE html>
       </div>
     </header>
 
-    <!-- Telemetry & Rally Stats Tracker -->
-    <div class="telemetry-hud">
-      <div class="rally-hud">
-        <div class="rally-title">
-          <span>TRI-PLANET RALLY</span>
-          <span class="fps-badge" id="fps-counter">60 FPS</span>
-        </div>
-        <div class="rally-counter"><span id="rally-count">56</span> <span class="rally-unit">HITS</span></div>
-        <div class="rally-route-badge" id="rally-route">🏓 單打星 ➔ 雙打星</div>
-      </div>
-    </div>
+    <!-- Telemetry HUD Deleted -->
 
     <!-- Bottom-Right Official Signature Seal (地圖右下角「連江縣桌球委員會」落款字樣) -->
     <div class="map-signature-seal" title="承辦單位：連江縣桌球委員會">
