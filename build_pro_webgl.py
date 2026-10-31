@@ -341,6 +341,66 @@ html_code = '''<!DOCTYPE html>
       color: var(--primary);
     }
 
+    /* ========================================================================
+       BOTTOM-RIGHT OFFICIAL SIGNATURE SEAL (連江縣桌球委員會 落款字樣)
+       ======================================================================== */
+    .map-signature-seal {
+      position: absolute;
+      bottom: 22px;
+      right: 26px;
+      z-index: 25;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(10, 18, 36, 0.92) 0%, rgba(5, 10, 22, 0.96) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.48);
+      border-left: 3px solid #ffd700;
+      padding: 8px 16px;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), 0 0 18px rgba(255, 215, 0, 0.15);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .seal-emblem {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.22) 0%, rgba(255, 170, 0, 0.05) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .seal-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .seal-main {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #ffffff 0%, #ffe680 55%, #ffd700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    .seal-sub {
+      font-family: var(--font-tech);
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+
     /* Bottom Sector Selector Navigation */
     .hud-footer {
       pointer-events: auto;
@@ -359,14 +419,14 @@ html_code = '''<!DOCTYPE html>
       flex-wrap: wrap;
       justify-content: center;
       gap: 14px;
-      max-width: 980px;
+      max-width: 880px;
       width: 100%;
     }
 
     .orb-tab {
       flex: 1;
-      min-width: 200px;
-      max-width: 290px;
+      min-width: 190px;
+      max-width: 270px;
       background: var(--hud-bg);
       border: 1px solid var(--hud-border);
       border-radius: 12px;
@@ -466,7 +526,7 @@ html_code = '''<!DOCTYPE html>
     }
 
     /* ========================================================================
-       FASHION-TECH HOLOGRAM MODAL - PODIUM SHOWCASE
+       FASHION-TECH HOLOGRAM MODAL - UNCROPPED FULL PHOTO PODIUM SHOWCASE
        ======================================================================== */
     .hologram-modal {
       position: absolute;
@@ -494,7 +554,7 @@ html_code = '''<!DOCTYPE html>
 
     .modal-card {
       width: 100%;
-      max-width: 1180px;
+      max-width: 1220px;
       max-height: 92vh;
       background: rgba(8, 14, 28, 0.97);
       border: 1px solid var(--hud-border);
@@ -512,12 +572,13 @@ html_code = '''<!DOCTYPE html>
     }
 
     .modal-header {
-      padding: 18px 28px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
       background: rgba(0, 0, 0, 0.45);
+      flex-shrink: 0;
     }
 
     .modal-header-left {
@@ -565,11 +626,11 @@ html_code = '''<!DOCTYPE html>
     }
 
     .modal-body {
-      padding: 24px 28px;
+      padding: 22px 28px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 26px;
+      gap: 24px;
     }
 
     .modal-lead-desc {
@@ -601,7 +662,7 @@ html_code = '''<!DOCTYPE html>
     }
 
     .podium-card:hover {
-      transform: translateY(-6px);
+      transform: translateY(-5px);
       box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
     }
 
@@ -671,32 +732,39 @@ html_code = '''<!DOCTYPE html>
       letter-spacing: 0.5px;
     }
 
+    /* 100% UNCROPPED FULL PHOTO BOX (object-fit: contain) */
     .card-photo-box {
       width: 100%;
-      aspect-ratio: 4 / 3;
+      height: 350px;
       position: relative;
       overflow: hidden;
-      background: #000;
+      background: radial-gradient(circle at center, #0e1a32 0%, #040710 100%);
       cursor: zoom-in;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .card-photo-box img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      transition: transform 0.4s ease;
+      object-fit: contain;
+      border-radius: 6px;
+      transition: transform 0.35s ease;
     }
 
     .card-photo-box:hover img {
-      transform: scale(1.06);
+      transform: scale(1.03);
     }
 
     .card-photo-overlay {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.24);
       border-radius: 20px;
       padding: 4px 10px;
       font-size: 11px;
@@ -707,12 +775,15 @@ html_code = '''<!DOCTYPE html>
       backdrop-filter: blur(4px);
     }
 
+    /* 100% UNCROPPED DUAL PHOTO BOX FOR JOINT 3RD PLACE */
     .dual-photo-box {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 3px;
-      aspect-ratio: 8 / 3;
-      background: #000;
+      gap: 8px;
+      height: 350px;
+      padding: 8px;
+      background: radial-gradient(circle at center, #0e1a32 0%, #040710 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .dual-photo-box .mini-photo-item {
@@ -720,17 +791,25 @@ html_code = '''<!DOCTYPE html>
       overflow: hidden;
       cursor: zoom-in;
       height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 4px;
     }
 
     .dual-photo-box .mini-photo-item img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      border-radius: 4px;
       transition: transform 0.3s ease;
     }
 
     .dual-photo-box .mini-photo-item:hover img {
-      transform: scale(1.08);
+      transform: scale(1.04);
     }
 
     .card-info {
@@ -762,7 +841,7 @@ html_code = '''<!DOCTYPE html>
       line-height: 1.55;
     }
 
-    /* Group Photos & Extra Carousel */
+    /* Group Photos & Extra Carousel - Uncropped Full Display */
     .group-photo-section {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -770,7 +849,7 @@ html_code = '''<!DOCTYPE html>
       padding: 18px 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .group-section-title {
@@ -784,68 +863,93 @@ html_code = '''<!DOCTYPE html>
 
     .group-photo-container {
       width: 100%;
-      max-height: 380px;
       border-radius: 10px;
-      overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      position: relative;
       cursor: zoom-in;
-      background: #000;
+      background: radial-gradient(circle at center, #0c162c 0%, #040710 100%);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
 
     .group-photo-container img {
       width: 100%;
-      height: 100%;
+      height: auto;
+      max-height: 540px;
       object-fit: contain;
       display: block;
+      border-radius: 6px;
       transition: transform 0.3s ease;
     }
 
     .group-photo-container:hover img {
-      transform: scale(1.02);
+      transform: scale(1.015);
     }
 
     .group-caption {
-      position: absolute;
-      bottom: 0;
-      left: 0;
       width: 100%;
-      background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
-      padding: 8px 14px;
-      font-size: 12px;
-      color: #fff;
+      text-align: center;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #f0f6fc;
     }
 
+    /* Uncropped Prep Gallery Grid */
     .prep-gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px;
     }
 
     .prep-thumb-item {
-      aspect-ratio: 4 / 3;
-      border-radius: 8px;
+      height: 220px;
+      border-radius: 10px;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.15);
       cursor: zoom-in;
       position: relative;
-      background: #000;
+      background: radial-gradient(circle at center, #0e1a32 0%, #040710 100%);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
     }
 
     .prep-thumb-item img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      border-radius: 6px;
       transition: transform 0.3s ease;
     }
 
     .prep-thumb-item:hover {
       border-color: var(--primary);
-      box-shadow: 0 0 14px var(--primary-glow);
+      box-shadow: 0 0 16px var(--primary-glow);
     }
 
     .prep-thumb-item:hover img {
-      transform: scale(1.08);
+      transform: scale(1.04);
+    }
+
+    /* Modal Footer Signature */
+    .modal-footer-signature {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #ffd700;
     }
 
     /* Lightbox Fullscreen Preview */
@@ -871,8 +975,9 @@ html_code = '''<!DOCTYPE html>
     }
 
     .lightbox-img {
-      max-width: 92vw;
-      max-height: 88vh;
+      max-width: 94vw;
+      max-height: 90vh;
+      object-fit: contain;
       border-radius: 12px;
       box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);
       border: 1px solid rgba(0, 240, 255, 0.5);
@@ -882,6 +987,9 @@ html_code = '''<!DOCTYPE html>
     @media (max-width: 900px) {
       .podium-grid {
         grid-template-columns: 1fr;
+      }
+      .card-photo-box, .dual-photo-box {
+        height: 310px;
       }
       .modal-card {
         max-height: 94vh;
@@ -908,17 +1016,28 @@ html_code = '''<!DOCTYPE html>
       .controls-hint {
         display: none;
       }
+      .map-signature-seal {
+        bottom: 92px;
+        right: 14px;
+        padding: 6px 12px;
+      }
+      .seal-main {
+        font-size: 13px;
+      }
+      .seal-sub {
+        display: none;
+      }
       .nav-orbs {
         gap: 8px;
       }
       .orb-tab {
-        min-width: 130px;
+        min-width: 120px;
         padding: 8px 10px;
       }
       .orb-tab-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
+        width: 30px;
+        height: 30px;
+        font-size: 15px;
       }
       .orb-tab-info .tab-title {
         font-size: 12px;
@@ -1011,6 +1130,15 @@ html_code = '''<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- Bottom-Right Official Signature Seal (地圖右下角「連江縣桌球委員會」落款字樣) -->
+    <div class="map-signature-seal" title="承辦單位：連江縣桌球委員會">
+      <div class="seal-emblem">🏓</div>
+      <div class="seal-text-group">
+        <div class="seal-main">連江縣桌球委員會</div>
+        <div class="seal-sub">LIENCHIANG TABLE TENNIS COMMITTEE</div>
+      </div>
+    </div>
+
     <!-- Bottom Navigation & Planet Selector -->
     <footer class="hud-footer">
       <div class="nav-orbs">
@@ -1070,7 +1198,7 @@ html_code = '''<!DOCTYPE html>
 
   <script>
     /* ========================================================================
-       1. DATA REPOSITORY (2048px Planet Textures, 4K Space BG, Podium Photos)
+       1. DATA REPOSITORY (2048px Planet Textures, 4K Space BG, Uncropped Photos)
        ======================================================================== */
     const TOURNAMENT_DATA = ''' + json.dumps(full_data, ensure_ascii=False) + ''';
 
@@ -1629,7 +1757,7 @@ html_code = '''<!DOCTYPE html>
       trailPositions[2] = z;
       trailLine.geometry.attributes.position.needsUpdate = true;
 
-      // Exact Phase-Crossing Hit Detection (Never misses even on frame drops)
+      // Exact Phase-Crossing Hit Detection
       if (currentHalfCycle !== lastHalfCycle) {
         lastHalfCycle = currentHalfCycle;
         const isRightEnd = (currentHalfCycle % 2 === 1);
@@ -1679,7 +1807,6 @@ html_code = '''<!DOCTYPE html>
         _projVec.y += p.config.radius + 2.2;
         _projVec.project(camera);
 
-        // Frustum culling check
         if (_projVec.z > 1.0 || _projVec.z < -1.0) {
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
@@ -1768,7 +1895,6 @@ html_code = '''<!DOCTYPE html>
       const dist = Math.hypot(dx, dy);
       const dt = performance.now() - _pointerDownPos.time;
 
-      // Only trigger raycast selection if movement < 6px and click duration < 350ms
       if (dist < 6 && dt < 350) {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -1820,7 +1946,6 @@ html_code = '''<!DOCTYPE html>
       const delta = Math.min(clock.getDelta(), 0.1);
       const elapsed = clock.getElapsedTime();
 
-      // FPS Telemetry calculation
       frameCount++;
       const now = performance.now();
       if (now - lastFpsTime >= 1000) {
@@ -1829,7 +1954,6 @@ html_code = '''<!DOCTYPE html>
         lastFpsTime = now;
       }
 
-      // Self rotation of planets
       if (planets['singles']) {
         planets['singles'].mesh.rotation.y += delta * 0.3;
         planets['singles'].wire.rotation.y -= delta * 0.12;
@@ -1857,7 +1981,7 @@ html_code = '''<!DOCTYPE html>
     }
 
     /* ========================================================================
-       5. MODAL & HUD CONTROLLER
+       5. MODAL & HUD CONTROLLER (Uncropped Full Photos + Official Signature)
        ======================================================================== */
     const modal = document.getElementById('modal');
     const modalSector = document.getElementById('modal-sector');
@@ -1880,17 +2004,17 @@ html_code = '''<!DOCTYPE html>
         if (item.photo_extra) {
           photoSection = `
             <div class="dual-photo-box">
-              <div class="mini-photo-item" onclick="openLightbox('${item.photo}')">
-                <img src="${item.photo}" alt="季軍第一組" loading="lazy">
+              <div class="mini-photo-item" onclick="openLightbox('${item.photo}')" title="點擊放大預覽">
+                <img src="${item.photo}" alt="季軍第一組完整照片" loading="lazy">
               </div>
-              <div class="mini-photo-item" onclick="openLightbox('${item.photo_extra}')">
-                <img src="${item.photo_extra}" alt="季軍第二組" loading="lazy">
+              <div class="mini-photo-item" onclick="openLightbox('${item.photo_extra}')" title="點擊放大預覽">
+                <img src="${item.photo_extra}" alt="季軍第二組完整照片" loading="lazy">
               </div>
             </div>
           `;
         } else if (item.photo) {
           photoSection = `
-            <div class="card-photo-box" onclick="openLightbox('${item.photo}')">
+            <div class="card-photo-box" onclick="openLightbox('${item.photo}')" title="點擊放大檢視原圖">
               <img src="${item.photo}" alt="${item.name}" loading="lazy">
               <div class="card-photo-overlay">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -1923,7 +2047,7 @@ html_code = '''<!DOCTYPE html>
           <div class="group-photo-section">
             <div class="group-section-title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-              全體選手與榮譽頒獎大合照
+              全體選手與榮譽頒獎大合照（完整呈現）
             </div>
             <div class="group-photo-container" onclick="openLightbox('${data.group_photo}')">
               <img src="${data.group_photo}" alt="${data.group_caption}">
@@ -1933,7 +2057,7 @@ html_code = '''<!DOCTYPE html>
         `;
       } else if (data.extra_photos && data.extra_photos.length > 0) {
         const prepThumbs = data.extra_photos.map((src, idx) => `
-          <div class="prep-thumb-item" onclick="openLightbox('${src}')">
+          <div class="prep-thumb-item" onclick="openLightbox('${src}')" title="點擊放大檢視">
             <img src="${src}" alt="賽事準備實況 ${idx+1}">
           </div>
         `).join('');
@@ -1942,7 +2066,7 @@ html_code = '''<!DOCTYPE html>
           <div class="group-photo-section">
             <div class="group-section-title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-              賽事實況與選手熱身花絮精選
+              賽事實況與選手熱身花絮精選（完整呈現）
             </div>
             <div class="prep-gallery-grid">
               ${prepThumbs}
@@ -1957,6 +2081,7 @@ html_code = '''<!DOCTYPE html>
           ${podiumCardsHtml}
         </div>
         ${extraSection}
+        <div class="modal-footer-signature">🏓 連江縣桌球委員會 敬賀</div>
       `;
 
       modal.classList.add('open');
@@ -2046,7 +2171,6 @@ html_code = '''<!DOCTYPE html>
 </html>
 '''
 
-# Deploy to all target locations
 paths = [
     r'E:\2026GEM-SKILL\table-tennis-cosmic-arena\index.html',
     r'E:\2026GEM-SKILL\index.html',
@@ -2057,4 +2181,4 @@ paths = [
 for p in paths:
     with open(p, 'w', encoding='utf-8') as f:
         f.write(html_code)
-    print(f"Deployed Pro WebGL HTML -> {p} ({os.path.getsize(p)/1024:.2f} KB)")
+    print(f"Deployed Uncropped + Signature HTML -> {p} ({os.path.getsize(p)/1024:.2f} KB)")
