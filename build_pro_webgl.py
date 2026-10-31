@@ -1,0 +1,2060 @@
+import json, os
+
+data_path = r'E:\2026GEM-SKILL\table-tennis-cosmic-arena\assets\github_data.json'
+with open(data_path, 'r', encoding='utf-8') as f:
+    full_data = json.load(f)
+
+html_code = '''<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>115年度連江縣體育季桌球錦標賽 ｜ 3D 星際太空展館 (Pro WebGL Edition)</title>
+  <!-- Google Fonts: Noto Sans TC (思源黑體), Orbitron, Rajdhani -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Three.js r128 & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- GSAP 3.12.5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #00f0ff;
+      --primary-glow: rgba(0, 240, 255, 0.45);
+      --amber-gold: #ffaa00;
+      --amber-glow: rgba(255, 170, 0, 0.45);
+      --amethyst: #b800ff;
+      --gold-pure: #ffd700;
+      --silver-pure: #e2e8f0;
+      --bronze-pure: #e67e22;
+      --bg-dark: #02040a;
+      --hud-bg: rgba(6, 11, 24, 0.84);
+      --hud-border: rgba(0, 240, 255, 0.25);
+      --card-bg: rgba(10, 16, 32, 0.95);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-tc: 'Noto Sans TC', "Source Han Sans TC", "Source Han Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-tech: 'Orbitron', 'Rajdhani', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: var(--font-tc);
+      color: var(--text-main);
+      touch-action: none;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      outline: none;
+    }
+
+    /* 3D Spatial Floating Anchors Layer */
+    #spatial-anchors {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .spatial-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: auto;
+      cursor: pointer;
+      will-change: transform, opacity;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: filter 0.25s ease;
+    }
+
+    .spatial-label:hover {
+      filter: brightness(1.25) drop-shadow(0 0 14px var(--primary));
+      z-index: 8;
+    }
+
+    .spatial-pill {
+      background: rgba(5, 10, 22, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65);
+      white-space: nowrap;
+    }
+
+    .spatial-label[data-key="singles"] .spatial-pill {
+      border-color: rgba(255, 170, 0, 0.65);
+      box-shadow: 0 0 18px rgba(255, 170, 0, 0.25);
+    }
+    .spatial-label[data-key="doubles"] .spatial-pill {
+      border-color: rgba(0, 240, 255, 0.65);
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
+    }
+    .spatial-label[data-key="prep"] .spatial-pill {
+      border-color: rgba(255, 215, 0, 0.65);
+      box-shadow: 0 0 18px rgba(255, 215, 0, 0.25);
+    }
+
+    .spatial-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .spatial-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      color: #fff;
+    }
+
+    .spatial-champ {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding-left: 6px;
+      border-left: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .spatial-stem {
+      width: 1.5px;
+      height: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%);
+    }
+
+    /* UI Overlay Layer */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Top HUD Header */
+    .hud-header {
+      pointer-events: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 26px;
+      background: linear-gradient(180deg, rgba(2, 4, 10, 0.95) 0%, rgba(2, 4, 10, 0.55) 80%, transparent 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.16);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge-year {
+      background: linear-gradient(135deg, #ff0055, #ff7700);
+      color: #fff;
+      font-family: var(--font-tech);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 16px rgba(255, 0, 85, 0.5);
+    }
+
+    .title-box h1 {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      background: linear-gradient(90deg, #ffffff 0%, #00f0ff 55%, #ffd700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 2px;
+    }
+
+    .title-box p {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-family: var(--font-tech);
+    }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.28);
+      color: var(--primary);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-tc);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(4px);
+    }
+
+    .btn-icon:hover, .btn-icon.active {
+      background: rgba(0, 240, 255, 0.24);
+      border-color: var(--primary);
+      box-shadow: 0 0 16px var(--primary-glow);
+      transform: translateY(-1px);
+      color: #fff;
+    }
+
+    .btn-icon:active {
+      transform: translateY(1px);
+    }
+
+    /* Sound Visualizer & Wave */
+    .sound-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .sound-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 14px;
+    }
+
+    .sound-bar {
+      width: 3px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: height 0.1s ease;
+    }
+
+    .sound-bars.active .sound-bar:nth-child(1) { animation: bounce 0.35s infinite alternate ease-in-out; }
+    .sound-bars.active .sound-bar:nth-child(2) { animation: bounce 0.5s infinite alternate ease-in-out 0.12s; }
+    .sound-bars.active .sound-bar:nth-child(3) { animation: bounce 0.42s infinite alternate ease-in-out 0.24s; }
+
+    @keyframes bounce {
+      0% { height: 4px; }
+      100% { height: 14px; }
+    }
+
+    /* Telemetry & Rally Stats HUD */
+    .telemetry-hud {
+      position: absolute;
+      top: 84px;
+      left: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .rally-hud {
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      padding: 10px 16px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .rally-title {
+      font-family: var(--font-tech);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1.2px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .fps-badge {
+      color: #10b981;
+      font-weight: 800;
+    }
+
+    .rally-counter {
+      font-family: var(--font-tech);
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .rally-unit {
+      font-size: 11px;
+      color: var(--primary);
+    }
+
+    /* Bottom Sector Selector Navigation */
+    .hud-footer {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 20px;
+      gap: 10px;
+      background: linear-gradient(0deg, rgba(2, 4, 10, 0.98) 0%, rgba(2, 4, 10, 0.6) 70%, transparent 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .nav-orbs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      max-width: 980px;
+      width: 100%;
+    }
+
+    .orb-tab {
+      flex: 1;
+      min-width: 200px;
+      max-width: 290px;
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .orb-tab::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+      opacity: 0.45;
+      transition: opacity 0.3s ease;
+    }
+
+    .orb-tab.tab-singles::before { background: var(--amber-gold); }
+    .orb-tab.tab-doubles::before { background: var(--primary); }
+    .orb-tab.tab-prep::before { background: var(--gold-pure); }
+
+    .orb-tab:hover, .orb-tab.active {
+      transform: translateY(-4px);
+      background: rgba(12, 22, 44, 0.96);
+      border-color: rgba(0, 240, 255, 0.75);
+      box-shadow: 0 8px 26px rgba(0, 240, 255, 0.25);
+    }
+
+    .orb-tab.active::before {
+      opacity: 1;
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    .orb-tab-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+    }
+
+    .orb-tab-info {
+      text-align: left;
+      overflow: hidden;
+    }
+
+    .orb-tab-info .tab-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
+      font-family: var(--font-tech);
+    }
+
+    .orb-tab-info .tab-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .controls-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hint-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint-key {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-tech);
+      font-size: 11px;
+      color: #fff;
+    }
+
+    /* ========================================================================
+       FASHION-TECH HOLOGRAM MODAL - PODIUM SHOWCASE
+       ======================================================================== */
+    .hologram-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      background: rgba(2, 4, 10, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s ease;
+    }
+
+    .hologram-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 1180px;
+      max-height: 92vh;
+      background: rgba(8, 14, 28, 0.97);
+      border: 1px solid var(--hud-border);
+      border-radius: 18px;
+      box-shadow: 0 0 60px rgba(0, 240, 255, 0.22), inset 0 0 25px rgba(0, 240, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.94) translateY(16px);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hologram-modal.open .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .sector-tag {
+      font-family: var(--font-tech);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .modal-header h2 {
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .btn-close {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-close:hover {
+      background: rgba(255, 0, 85, 0.75);
+      border-color: #ff0055;
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 24px 28px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+    }
+
+    .modal-lead-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      border-left: 3px solid var(--primary);
+      padding-left: 12px;
+    }
+
+    /* Podium Grid: 1st, 2nd, 3rd Cards */
+    .podium-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .podium-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .podium-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Gold Card (1st) */
+    .podium-card.rank-1-card {
+      border-color: rgba(255, 215, 0, 0.65);
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+      background: linear-gradient(180deg, rgba(35, 28, 12, 0.96) 0%, rgba(12, 18, 36, 0.98) 100%);
+    }
+    .podium-card.rank-1-card:hover {
+      border-color: #ffd700;
+      box-shadow: 0 0 45px rgba(255, 215, 0, 0.35);
+    }
+
+    /* Silver Card (2nd) */
+    .podium-card.rank-2-card {
+      border-color: rgba(226, 232, 240, 0.5);
+      box-shadow: 0 0 25px rgba(226, 232, 240, 0.12);
+      background: linear-gradient(180deg, rgba(22, 28, 38, 0.96) 0%, rgba(12, 18, 36, 0.98) 100%);
+    }
+    .podium-card.rank-2-card:hover {
+      border-color: #ffffff;
+      box-shadow: 0 0 38px rgba(226, 232, 240, 0.3);
+    }
+
+    /* Bronze Card (3rd) */
+    .podium-card.rank-3-card {
+      border-color: rgba(230, 126, 34, 0.5);
+      box-shadow: 0 0 25px rgba(230, 126, 34, 0.12);
+      background: linear-gradient(180deg, rgba(34, 20, 14, 0.96) 0%, rgba(12, 18, 36, 0.98) 100%);
+    }
+    .podium-card.rank-3-card:hover {
+      border-color: #e67e22;
+      box-shadow: 0 0 38px rgba(230, 126, 34, 0.3);
+    }
+
+    .card-top-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .badge-rank-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rank-1-card .badge-rank-title { color: #ffd700; }
+    .rank-2-card .badge-rank-title { color: #e2e8f0; }
+    .rank-3-card .badge-rank-title { color: #f39c12; }
+
+    .badge-label {
+      font-family: var(--font-tech);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .card-photo-box {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+      cursor: zoom-in;
+    }
+
+    .card-photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .card-photo-box:hover img {
+      transform: scale(1.06);
+    }
+
+    .card-photo-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(4px);
+    }
+
+    .dual-photo-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      aspect-ratio: 8 / 3;
+      background: #000;
+    }
+
+    .dual-photo-box .mini-photo-item {
+      position: relative;
+      overflow: hidden;
+      cursor: zoom-in;
+      height: 100%;
+    }
+
+    .dual-photo-box .mini-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .dual-photo-box .mini-photo-item:hover img {
+      transform: scale(1.08);
+    }
+
+    .card-info {
+      padding: 16px 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .winner-name-text {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+      white-space: pre-line;
+      line-height: 1.4;
+    }
+
+    .rank-1-card .winner-name-text {
+      background: linear-gradient(90deg, #fff7cc, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .winner-desc-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Group Photos & Extra Carousel */
+    .group-photo-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .group-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .group-photo-container {
+      width: 100%;
+      max-height: 380px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      cursor: zoom-in;
+      background: #000;
+    }
+
+    .group-photo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .group-photo-container:hover img {
+      transform: scale(1.02);
+    }
+
+    .group-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .prep-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .prep-thumb-item {
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: zoom-in;
+      position: relative;
+      background: #000;
+    }
+
+    .prep-thumb-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .prep-thumb-item:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+
+    .prep-thumb-item:hover img {
+      transform: scale(1.08);
+    }
+
+    /* Lightbox Fullscreen Preview */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 200;
+      background: rgba(2, 4, 10, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+
+    .lightbox-overlay.active {
+      display: flex;
+    }
+
+    .lightbox-img {
+      max-width: 92vw;
+      max-height: 88vh;
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);
+      border: 1px solid rgba(0, 240, 255, 0.5);
+    }
+
+    /* Responsive Mobile / Tablet */
+    @media (max-width: 900px) {
+      .podium-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal-card {
+        max-height: 94vh;
+      }
+      .hud-header {
+        padding: 12px 16px;
+      }
+      .title-box h1 {
+        font-size: 16px;
+      }
+      .title-box p {
+        display: none;
+      }
+      .btn-icon span {
+        display: none;
+      }
+      .telemetry-hud {
+        top: 66px;
+        left: 16px;
+      }
+      .spatial-champ {
+        display: none;
+      }
+      .controls-hint {
+        display: none;
+      }
+      .nav-orbs {
+        gap: 8px;
+      }
+      .orb-tab {
+        min-width: 130px;
+        padding: 8px 10px;
+      }
+      .orb-tab-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+      }
+      .orb-tab-info .tab-title {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- WebGL Three.js Container -->
+  <div id="webgl-canvas"></div>
+
+  <!-- 3D Projected Spatial Labels -->
+  <div id="spatial-anchors">
+    <div class="spatial-label" id="anchor-singles" data-key="singles">
+      <div class="spatial-pill">
+        <span class="spatial-dot" style="background:#ffaa00;box-shadow:0 0 8px #ffaa00;"></span>
+        <span class="spatial-title">公開單打擂台星</span>
+        <span class="spatial-champ">🥇 張正輝</span>
+      </div>
+      <div class="spatial-stem"></div>
+    </div>
+
+    <div class="spatial-label" id="anchor-doubles" data-key="doubles">
+      <div class="spatial-pill">
+        <span class="spatial-dot" style="background:#00f0ff;box-shadow:0 0 8px #00f0ff;"></span>
+        <span class="spatial-title">公開雙打雙生星</span>
+        <span class="spatial-champ">🥇 曹常容／張正輝</span>
+      </div>
+      <div class="spatial-stem"></div>
+    </div>
+
+    <div class="spatial-label" id="anchor-prep" data-key="prep">
+      <div class="spatial-pill">
+        <span class="spatial-dot" style="background:#ffd700;box-shadow:0 0 8px #ffd700;"></span>
+        <span class="spatial-title">賽事籌備與大會星</span>
+        <span class="spatial-champ">🛡️ 南竿體育館</span>
+      </div>
+      <div class="spatial-stem"></div>
+    </div>
+  </div>
+
+  <!-- UI HUD Layer -->
+  <div class="ui-layer">
+    <!-- Top Header -->
+    <header class="hud-header">
+      <div class="brand-group">
+        <div class="badge-year">115年度</div>
+        <div class="title-box">
+          <h1>連江縣體育季桌球錦標賽</h1>
+          <p>3D COSMIC ARENA ｜ 馬祖南竿體育館 榮耀星際殿堂</p>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <div class="sound-status">
+          <div class="sound-bars" id="sound-bars">
+            <div class="sound-bar"></div>
+            <div class="sound-bar"></div>
+            <div class="sound-bar"></div>
+          </div>
+          <button class="btn-icon active" id="btn-sound" title="切換立體聲音效">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <span id="sound-text">桌球音效: 開</span>
+          </button>
+        </div>
+
+        <button class="btn-icon" id="btn-hit" title="擊球模擬音效 (Space)">
+          <span>🏓 擊球模擬</span>
+        </button>
+
+        <button class="btn-icon" id="btn-reset" title="重置為全景視角">
+          <span>🌌 全景星圖</span>
+        </button>
+
+        <button class="btn-icon" id="btn-fullscreen" title="全螢幕切換">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Telemetry & Rally Stats Tracker -->
+    <div class="telemetry-hud">
+      <div class="rally-hud">
+        <div class="rally-title">
+          <span>QUANTUM RALLY</span>
+          <span class="fps-badge" id="fps-counter">60 FPS</span>
+        </div>
+        <div class="rally-counter"><span id="rally-count">56</span> <span class="rally-unit">HITS</span></div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation & Planet Selector -->
+    <footer class="hud-footer">
+      <div class="nav-orbs">
+        <div class="orb-tab tab-singles" data-target="singles">
+          <div class="orb-tab-icon" style="color: #ffaa00; border-color: rgba(255,170,0,0.4);">🔥</div>
+          <div class="orb-tab-info">
+            <div class="tab-sub">SECTOR 01 [KEY 1]</div>
+            <div class="tab-title">公開單打擂台星</div>
+          </div>
+        </div>
+
+        <div class="orb-tab tab-doubles" data-target="doubles">
+          <div class="orb-tab-icon" style="color: #00f0ff; border-color: rgba(0,240,255,0.4);">⚡</div>
+          <div class="orb-tab-info">
+            <div class="tab-sub">SECTOR 02 [KEY 2]</div>
+            <div class="tab-title">公開雙打雙生星</div>
+          </div>
+        </div>
+
+        <div class="orb-tab tab-prep" data-target="prep">
+          <div class="orb-tab-icon" style="color: #ffd700; border-color: rgba(255,215,0,0.4);">🛡️</div>
+          <div class="orb-tab-info">
+            <div class="tab-sub">SECTOR 03 [KEY 3]</div>
+            <div class="tab-title">賽事籌備與大會星</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-hint">
+        <div class="hint-item"><span class="hint-key">拖曳</span> 360° 旋轉視角</div>
+        <div class="hint-item"><span class="hint-key">滾輪/雙指</span> 縮放星系</div>
+        <div class="hint-item"><span class="hint-key">點擊星球/標籤</span> 檢視前三名頒獎台</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Hologram Modal -->
+  <div class="hologram-modal" id="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="sector-tag" id="modal-sector">SECTOR 01</span>
+          <h2 id="modal-title">賽事榮耀榜</h2>
+        </div>
+        <button class="btn-close" id="btn-close-modal" title="關閉 (ESC)">✕</button>
+      </div>
+      <div class="modal-body" id="modal-content">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox-overlay" id="lightbox">
+    <img class="lightbox-img" id="lightbox-img" src="" alt="高解析照片預覽">
+  </div>
+
+  <script>
+    /* ========================================================================
+       1. DATA REPOSITORY (2048px Planet Textures, 4K Space BG, Podium Photos)
+       ======================================================================== */
+    const TOURNAMENT_DATA = ''' + json.dumps(full_data, ensure_ascii=False) + ''';
+
+    /* ========================================================================
+       2. CUSTOM GLSL SHADER LIBRARY (True Fresnel Rim Glow & Sparkle Starfield)
+       ======================================================================== */
+    const ShaderLibrary = {
+      fresnelAtmosphere: {
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPositionNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPositionNormal = normalize((modelViewMatrix * vec4(position, 1.0)).xyz);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 glowColor;
+          uniform float intensity;
+          uniform float power;
+          varying vec3 vNormal;
+          varying vec3 vPositionNormal;
+          void main() {
+            float fresnel = pow(1.0 - abs(dot(vNormal, vPositionNormal)), power);
+            gl_FragColor = vec4(glowColor, fresnel * intensity);
+          }
+        `
+      }
+    };
+
+    /* ========================================================================
+       3. SPATIAL WEB AUDIO SYNTHESIZER (Physical Table Tennis Acoustics + Pan)
+       ======================================================================== */
+    class SpatialAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.masterGain = null;
+        this.noiseBuffer = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+
+        // Pre-allocate White Noise Buffer for Rubber Friction Transient
+        const bufferSize = this.ctx.sampleRate * 0.05;
+        this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = this.noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        this.startCosmicDrone();
+      }
+
+      startCosmicDrone() {
+        if (!this.ctx) return;
+        try {
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const droneGain = this.ctx.createGain();
+
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(44, this.ctx.currentTime);
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(46.5, this.ctx.currentTime);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(105, this.ctx.currentTime);
+          droneGain.gain.setValueAtTime(0.07, this.ctx.currentTime);
+
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(droneGain);
+          droneGain.connect(this.masterGain);
+
+          osc1.start();
+          osc2.start();
+        } catch (e) {
+          console.warn("Drone init skipped:", e);
+        }
+      }
+
+      playPing(frequency = 960, decay = 0.075, isSmash = false, panValue = 0) {
+        if (!this.enabled) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const now = this.ctx.currentTime;
+        const panner = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
+        const targetNode = panner || this.masterGain;
+        if (panner) {
+          panner.pan.setValueAtTime(Math.max(-1, Math.min(1, panValue)), now);
+          panner.connect(this.masterGain);
+        }
+
+        // Primary Celluloid/Plastic 40+ Ball Shell Resonance
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = isSmash ? 'sawtooth' : 'sine';
+        osc.frequency.setValueAtTime(frequency, now);
+        osc.frequency.exponentialRampToValueAtTime(330, now + decay);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(isSmash ? 1450 : 1020, now);
+        filter.Q.setValueAtTime(4.0, now);
+
+        gain.gain.setValueAtTime(isSmash ? 0.6 : 0.38, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(targetNode);
+
+        osc.start(now);
+        osc.stop(now + decay);
+
+        // Wood Ply Blade Impact Pop
+        const popOsc = this.ctx.createOscillator();
+        const popGain = this.ctx.createGain();
+        popOsc.frequency.setValueAtTime(440, now);
+        popOsc.frequency.exponentialRampToValueAtTime(150, now + 0.038);
+        popGain.gain.setValueAtTime(0.24, now);
+        popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
+        popOsc.connect(popGain);
+        popGain.connect(targetNode);
+        popOsc.start(now);
+        popOsc.stop(now + 0.038);
+
+        // Topspin Rubber Friction Crisp Transient
+        if (this.noiseBuffer) {
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.noiseBuffer;
+          const nFilter = this.ctx.createBiquadFilter();
+          nFilter.type = 'highpass';
+          nFilter.frequency.setValueAtTime(2400, now);
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(isSmash ? 0.25 : 0.1, now);
+          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+          noise.connect(nFilter);
+          nFilter.connect(nGain);
+          nGain.connect(targetNode);
+          noise.start(now);
+        }
+      }
+
+      toggle() {
+        this.enabled = !this.enabled;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setValueAtTime(this.enabled ? 0.75 : 0, this.ctx.currentTime);
+        }
+        return this.enabled;
+      }
+    }
+
+    const soundSystem = new SpatialAudioEngine();
+
+    /* ========================================================================
+       4. PRO WEBGL 3D ENGINE (Zero-GC Loop, Fresnel Shaders, Trail Pool)
+       ======================================================================== */
+    const container = document.getElementById('webgl-canvas');
+    let scene, camera, renderer, controls;
+    let planets = {};
+    let planetMeshes = [];
+    let raycaster, mouse;
+    let starfield;
+    let rallyBall, trailLine, trailPositions, impactRing;
+    let rallyPhase = 0;
+    let lastHalfCycle = 0;
+    let rallyRounds = 56;
+    let isModalOpen = false;
+    let isPageHidden = false;
+    let hoveredPlanetKey = null;
+
+    // Pre-allocated Scratch Vectors for Zero-GC Render Loop
+    const _projVec = new THREE.Vector3();
+    const _pointerDownPos = { x: 0, y: 0, time: 0 };
+    const TRAIL_LENGTH = 28;
+
+    // FPS Telemetry state
+    let frameCount = 0;
+    let lastFpsTime = performance.now();
+    const fpsEl = document.getElementById('fps-counter');
+
+    function initWebGL() {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x02040a, 0.0038);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1200);
+      camera.position.set(0, 14, 46);
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance",
+        stencil: false
+      });
+      renderer.setClearColor(0x02040a, 1);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.32;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 135;
+      controls.minDistance = 6;
+      controls.maxPolarAngle = Math.PI / 2 + 0.12;
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Studio-grade 3-Point Celestial Lighting
+      const ambientLight = new THREE.AmbientLight(0x283855, 1.45);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
+      sunLight.position.set(35, 45, 25);
+      scene.add(sunLight);
+
+      const cyanRim = new THREE.PointLight(0x00f0ff, 3.4, 130);
+      cyanRim.position.set(-25, 12, -20);
+      scene.add(cyanRim);
+
+      const goldRim = new THREE.PointLight(0xffaa00, 3.0, 130);
+      goldRim.position.set(28, -12, -15);
+      scene.add(goldRim);
+
+      buildSpaceBackground();
+      buildStarfields();
+      buildCelestialPlanets();
+      buildPingPongRallySystem();
+
+      // Event Listeners with Drag-vs-Click Disambiguation
+      window.addEventListener('resize', onWindowResize, { passive: true });
+      renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: true });
+      renderer.domElement.addEventListener('pointerup', onPointerUp, { passive: true });
+      renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: true });
+
+      document.addEventListener('visibilitychange', () => {
+        isPageHidden = document.hidden;
+        if (!isPageHidden) clock.getDelta();
+      });
+
+      animate();
+    }
+
+    /* 1. Deep Space Panorama with Max Anisotropy */
+    function buildSpaceBackground() {
+      if (TOURNAMENT_DATA.space_bg) {
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(TOURNAMENT_DATA.space_bg, (tex) => {
+          tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          const bgGeo = new THREE.SphereGeometry(360, 64, 48);
+          bgGeo.scale(-1, 1, 1);
+          const bgMat = new THREE.MeshBasicMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.78,
+            depthWrite: false
+          });
+          const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+          scene.add(bgMesh);
+        });
+      }
+    }
+
+    /* 2. Multi-tier Anti-aliased Starfield */
+    function buildStarfields() {
+      const starGeo = new THREE.BufferGeometry();
+      const starCount = 4200;
+      const posArray = new Float32Array(starCount * 3);
+      const colorArray = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount * 3; i += 3) {
+        posArray[i] = (Math.random() - 0.5) * 400;
+        posArray[i + 1] = (Math.random() - 0.5) * 220;
+        posArray[i + 2] = (Math.random() - 0.5) * 400;
+
+        const rand = Math.random();
+        if (rand > 0.6) {
+          colorArray[i] = 0.2; colorArray[i + 1] = 0.95; colorArray[i + 2] = 1.0;
+        } else if (rand > 0.3) {
+          colorArray[i] = 1.0; colorArray[i + 1] = 0.8; colorArray[i + 2] = 0.3;
+        } else {
+          colorArray[i] = 0.95; colorArray[i + 1] = 0.98; colorArray[i + 2] = 1.0;
+        }
+      }
+
+      starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      starGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grad.addColorStop(0, 'rgba(255,255,255,1)');
+      grad.addColorStop(0.25, 'rgba(0,240,255,0.85)');
+      grad.addColorStop(0.6, 'rgba(0,240,255,0.2)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 32, 32);
+      const starTex = new THREE.CanvasTexture(canvas);
+
+      const starMat = new THREE.PointsMaterial({
+        size: 2.2,
+        vertexColors: true,
+        map: starTex,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      starfield = new THREE.Points(starGeo, starMat);
+      scene.add(starfield);
+    }
+
+    /* 3. Three Fashion Celestial Orbs with Custom GLSL Fresnel Atmosphere & Bump Relief */
+    function buildCelestialPlanets() {
+      const texLoader = new THREE.TextureLoader();
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+      const configs = [
+        {
+          key: 'singles',
+          texKey: 'vulcan',
+          name: '公開單打擂台星',
+          pos: new THREE.Vector3(-18, 1, 0),
+          radius: 4.8,
+          color: 0xffaa00,
+          glowColor: new THREE.Color(0xff6600),
+          ringColor: 0xffaa00,
+          ringRadius: 8.8,
+          anchorEl: document.getElementById('anchor-singles')
+        },
+        {
+          key: 'doubles',
+          texKey: 'cygnus',
+          name: '公開雙打雙生星',
+          pos: new THREE.Vector3(0, 2.5, -4),
+          radius: 5.6,
+          color: 0x00f0ff,
+          glowColor: new THREE.Color(0x00f0ff),
+          ringColor: 0x00f0ff,
+          ringRadius: 10.5,
+          anchorEl: document.getElementById('anchor-doubles')
+        },
+        {
+          key: 'prep',
+          texKey: 'aegis',
+          name: '賽事籌備與大會星',
+          pos: new THREE.Vector3(18, -1, 1),
+          radius: 4.5,
+          color: 0xffd700,
+          glowColor: new THREE.Color(0xffd700),
+          ringColor: 0xffd700,
+          ringRadius: 8.2,
+          anchorEl: document.getElementById('anchor-prep')
+        }
+      ];
+
+      configs.forEach(cfg => {
+        const group = new THREE.Group();
+        group.position.copy(cfg.pos);
+
+        const texData = TOURNAMENT_DATA.planet_textures[cfg.texKey];
+        const planetTex = texLoader.load(texData);
+        planetTex.wrapS = THREE.RepeatWrapping;
+        planetTex.wrapT = THREE.ClampToEdgeWrapping;
+        planetTex.anisotropy = maxAniso;
+
+        const geo = new THREE.SphereGeometry(cfg.radius, 64, 64);
+        const mat = new THREE.MeshStandardMaterial({
+          map: planetTex,
+          bumpMap: planetTex,
+          bumpScale: 0.14,
+          roughness: 0.28,
+          metalness: 0.48,
+          emissive: cfg.color,
+          emissiveIntensity: 0.16
+        });
+        const sphere = new THREE.Mesh(geo, mat);
+        sphere.userData = { key: cfg.key, name: cfg.name, group: group };
+        group.add(sphere);
+        planetMeshes.push(sphere);
+
+        // True GLSL Fresnel Rim Atmosphere Shader
+        const atmosGeo = new THREE.SphereGeometry(cfg.radius * 1.18, 48, 48);
+        const atmosMat = new THREE.ShaderMaterial({
+          uniforms: {
+            glowColor: { value: cfg.glowColor },
+            intensity: { value: 1.15 },
+            power: { value: 2.6 }
+          },
+          vertexShader: ShaderLibrary.fresnelAtmosphere.vertexShader,
+          fragmentShader: ShaderLibrary.fresnelAtmosphere.fragmentShader,
+          side: THREE.FrontSide,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false
+        });
+        const atmos = new THREE.Mesh(atmosGeo, atmosMat);
+        group.add(atmos);
+
+        // Dual Concentric Luxury Rings
+        const ringGeo = new THREE.RingGeometry(cfg.ringRadius * 0.82, cfg.ringRadius, 96);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: cfg.ringColor,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.48,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2.3;
+        ring.rotation.y = Math.PI / 8;
+        group.add(ring);
+
+        const innerRingGeo = new THREE.RingGeometry(cfg.ringRadius * 0.68, cfg.ringRadius * 0.71, 96);
+        const innerRingMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.25,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+        innerRing.rotation.x = Math.PI / 2.3;
+        innerRing.rotation.y = Math.PI / 8;
+        group.add(innerRing);
+
+        // Precision Geodesic Hex Lattice
+        const wireGeo = new THREE.IcosahedronGeometry(cfg.radius * 1.36, 2);
+        const wireMat = new THREE.MeshBasicMaterial({
+          color: cfg.color,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.12,
+          depthWrite: false
+        });
+        const wireSphere = new THREE.Mesh(wireGeo, wireMat);
+        group.add(wireSphere);
+
+        scene.add(group);
+
+        planets[cfg.key] = {
+          mesh: sphere,
+          group: group,
+          atmos: atmos,
+          ring: ring,
+          wire: wireSphere,
+          config: cfg
+        };
+      });
+    }
+
+    /* 4. Zero-GC Quantum Table Tennis Rally + Ribbon Trail + Impact Shockwave */
+    function buildPingPongRallySystem() {
+      const ballGeo = new THREE.SphereGeometry(0.55, 24, 24);
+      const ballMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      rallyBall = new THREE.Mesh(ballGeo, ballMat);
+
+      const haloGeo = new THREE.SphereGeometry(1.25, 20, 20);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.48,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      rallyBall.add(new THREE.Mesh(haloGeo, haloMat));
+      scene.add(rallyBall);
+
+      // Pre-allocated Trail BufferGeometry
+      const trailGeo = new THREE.BufferGeometry();
+      trailPositions = new Float32Array(TRAIL_LENGTH * 3);
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      const trailMat = new THREE.LineBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending
+      });
+      trailLine = new THREE.Line(trailGeo, trailMat);
+      scene.add(trailLine);
+
+      // Pre-allocated Impact Shockwave Ring
+      const impactGeo = new THREE.RingGeometry(0.5, 0.9, 32);
+      const impactMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      impactRing = new THREE.Mesh(impactGeo, impactMat);
+      scene.add(impactRing);
+    }
+
+    function triggerImpactShockwave(x, y, z, colorHex) {
+      if (!impactRing) return;
+      impactRing.position.set(x, y, z);
+      impactRing.lookAt(camera.position);
+      impactRing.scale.set(0.5, 0.5, 0.5);
+      impactRing.material.color.setHex(colorHex);
+      impactRing.material.opacity = 0.85;
+
+      gsap.killTweensOf(impactRing.scale);
+      gsap.killTweensOf(impactRing.material);
+      gsap.to(impactRing.scale, { x: 4.2, y: 4.2, z: 4.2, duration: 0.55, ease: "power2.out" });
+      gsap.to(impactRing.material, { opacity: 0.0, duration: 0.55, ease: "power2.out" });
+    }
+
+    /* Zero-GC Rally Update with Exact Phase-Crossing Collision Detection */
+    function updateRally(delta) {
+      if (!rallyBall || !planets['singles'] || !planets['doubles']) return;
+
+      const p1 = planets['singles'].config.pos;
+      const p2 = planets['doubles'].config.pos;
+
+      rallyPhase += delta * 1.75;
+      const currentHalfCycle = Math.floor((rallyPhase + Math.PI / 2) / Math.PI);
+
+      const t = (Math.sin(rallyPhase) + 1) * 0.5;
+      const x = THREE.MathUtils.lerp(p1.x + 5.2, p2.x - 5.2, t);
+      const z = THREE.MathUtils.lerp(p1.z, p2.z, t);
+      const arcHeight = Math.sin(t * Math.PI) * 7.2;
+      const y = THREE.MathUtils.lerp(p1.y, p2.y, t) + arcHeight + 3.4;
+
+      rallyBall.position.set(x, y, z);
+
+      // Shift pre-allocated trail buffer in-place (Zero GC allocation)
+      for (let i = (TRAIL_LENGTH - 1) * 3; i >= 3; i -= 3) {
+        trailPositions[i] = trailPositions[i - 3];
+        trailPositions[i + 1] = trailPositions[i - 2];
+        trailPositions[i + 2] = trailPositions[i - 1];
+      }
+      trailPositions[0] = x;
+      trailPositions[1] = y;
+      trailPositions[2] = z;
+      trailLine.geometry.attributes.position.needsUpdate = true;
+
+      // Exact Phase-Crossing Hit Detection (Never misses even on frame drops)
+      if (currentHalfCycle !== lastHalfCycle) {
+        lastHalfCycle = currentHalfCycle;
+        const isRightEnd = (currentHalfCycle % 2 === 1);
+        triggerTableTennisHit(isRightEnd ? 'ping' : 'pong', isRightEnd ? 0.35 : -0.55);
+        triggerImpactShockwave(x, y, z, isRightEnd ? 0x00f0ff : 0xffaa00);
+      }
+    }
+
+    function triggerTableTennisHit(type, pan = 0) {
+      if (type === 'ping') {
+        soundSystem.playPing(980, 0.07, false, pan);
+      } else if (type === 'smash') {
+        soundSystem.playPing(1220, 0.09, true, 0);
+      } else {
+        soundSystem.playPing(580, 0.085, false, pan);
+      }
+
+      rallyRounds++;
+      const counterEl = document.getElementById('rally-count');
+      if (counterEl) counterEl.textContent = rallyRounds;
+
+      const soundBars = document.getElementById('sound-bars');
+      if (soundBars) {
+        soundBars.classList.add('active');
+        clearTimeout(soundBars._timer);
+        soundBars._timer = setTimeout(() => soundBars.classList.remove('active'), 240);
+      }
+    }
+
+    /* Update 3D Spatial Anchors (Zero-GC Projection) */
+    function updateSpatialAnchors() {
+      const halfW = window.innerWidth * 0.5;
+      const halfH = window.innerHeight * 0.5;
+
+      for (const key in planets) {
+        const p = planets[key];
+        const el = p.config.anchorEl;
+        if (!el) continue;
+
+        if (isModalOpen) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          continue;
+        }
+
+        _projVec.copy(p.config.pos);
+        _projVec.y += p.config.radius + 2.2;
+        _projVec.project(camera);
+
+        // Frustum culling check
+        if (_projVec.z > 1.0 || _projVec.z < -1.0) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        } else {
+          const sx = (_projVec.x * halfW) + halfW;
+          const sy = -(_projVec.y * halfH) + halfH;
+          el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) translate(-50%, -100%)`;
+          el.style.opacity = '0.94';
+          el.style.pointerEvents = 'auto';
+        }
+      }
+    }
+
+    /* Camera Fly-In Animation & Modal Open */
+    function focusPlanet(key) {
+      const target = planets[key];
+      if (!target) return;
+
+      soundSystem.playPing(1160, 0.07, true, 0);
+
+      document.querySelectorAll('.orb-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.getAttribute('data-target') === key);
+      });
+
+      const pPos = target.config.pos;
+      const targetCamPos = new THREE.Vector3(pPos.x, pPos.y + 1.2, pPos.z + target.config.radius * 2.55);
+
+      gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(controls.target);
+
+      gsap.to(camera.position, {
+        x: targetCamPos.x,
+        y: targetCamPos.y,
+        z: targetCamPos.z,
+        duration: 1.25,
+        ease: "power3.inOut"
+      });
+
+      gsap.to(controls.target, {
+        x: pPos.x,
+        y: pPos.y,
+        z: pPos.z,
+        duration: 1.25,
+        ease: "power3.inOut",
+        onComplete: () => {
+          openModal(key);
+        }
+      });
+    }
+
+    function resetCamera() {
+      closeModal();
+      document.querySelectorAll('.orb-tab').forEach(tab => tab.classList.remove('active'));
+
+      gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(controls.target);
+
+      gsap.to(camera.position, {
+        x: 0,
+        y: 14,
+        z: 46,
+        duration: 1.5,
+        ease: "power3.inOut"
+      });
+
+      gsap.to(controls.target, {
+        x: 0,
+        y: 1,
+        z: 0,
+        duration: 1.5,
+        ease: "power3.inOut"
+      });
+    }
+
+    /* Smart Pointer Disambiguation (Distinguish Click vs Orbit Drag) */
+    function onPointerDown(event) {
+      _pointerDownPos.x = event.clientX;
+      _pointerDownPos.y = event.clientY;
+      _pointerDownPos.time = performance.now();
+    }
+
+    function onPointerUp(event) {
+      if (isModalOpen) return;
+      const dx = event.clientX - _pointerDownPos.x;
+      const dy = event.clientY - _pointerDownPos.y;
+      const dist = Math.hypot(dx, dy);
+      const dt = performance.now() - _pointerDownPos.time;
+
+      // Only trigger raycast selection if movement < 6px and click duration < 350ms
+      if (dist < 6 && dt < 350) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(planetMeshes);
+        if (intersects.length > 0) {
+          const hitKey = intersects[0].object.userData.key;
+          if (hitKey) focusPlanet(hitKey);
+        }
+      }
+    }
+
+    function onPointerMove(event) {
+      if (isModalOpen) return;
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(planetMeshes);
+
+      if (intersects.length > 0) {
+        const key = intersects[0].object.userData.key;
+        if (hoveredPlanetKey !== key) {
+          hoveredPlanetKey = key;
+          document.body.style.cursor = 'pointer';
+          gsap.to(planets[key].atmos.material.uniforms.intensity, { value: 1.65, duration: 0.25 });
+        }
+      } else if (hoveredPlanetKey) {
+        gsap.to(planets[hoveredPlanetKey].atmos.material.uniforms.intensity, { value: 1.15, duration: 0.25 });
+        hoveredPlanetKey = null;
+        document.body.style.cursor = 'default';
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* High-Efficiency Render Loop with Telemetry & Governor */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (isPageHidden) return;
+
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const elapsed = clock.getElapsedTime();
+
+      // FPS Telemetry calculation
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        if (fpsEl) fpsEl.textContent = `${frameCount} FPS`;
+        frameCount = 0;
+        lastFpsTime = now;
+      }
+
+      // Self rotation of planets
+      if (planets['singles']) {
+        planets['singles'].mesh.rotation.y += delta * 0.3;
+        planets['singles'].wire.rotation.y -= delta * 0.12;
+      }
+      if (planets['doubles']) {
+        planets['doubles'].mesh.rotation.y += delta * 0.25;
+        planets['doubles'].ring.rotation.z += delta * 0.08;
+      }
+      if (planets['prep']) {
+        planets['prep'].mesh.rotation.y += delta * 0.18;
+        planets['prep'].wire.rotation.x += delta * 0.09;
+      }
+
+      if (starfield) {
+        starfield.rotation.y = elapsed * 0.01;
+      }
+
+      if (!isModalOpen) {
+        updateRally(delta);
+        controls.update();
+      }
+
+      updateSpatialAnchors();
+      renderer.render(scene, camera);
+    }
+
+    /* ========================================================================
+       5. MODAL & HUD CONTROLLER
+       ======================================================================== */
+    const modal = document.getElementById('modal');
+    const modalSector = document.getElementById('modal-sector');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+
+    function openModal(key) {
+      const data = TOURNAMENT_DATA.planets[key];
+      if (!data) return;
+
+      isModalOpen = true;
+      controls.enabled = false;
+
+      modalSector.textContent = data.sector;
+      modalTitle.textContent = `${data.name} ｜ ${data.subtitle}`;
+
+      const podiumCardsHtml = data.rankings.map(item => {
+        let photoSection = '';
+        if (item.photo_extra) {
+          photoSection = `
+            <div class="dual-photo-box">
+              <div class="mini-photo-item" onclick="openLightbox('${item.photo}')">
+                <img src="${item.photo}" alt="季軍第一組" loading="lazy">
+              </div>
+              <div class="mini-photo-item" onclick="openLightbox('${item.photo_extra}')">
+                <img src="${item.photo_extra}" alt="季軍第二組" loading="lazy">
+              </div>
+            </div>
+          `;
+        } else if (item.photo) {
+          photoSection = `
+            <div class="card-photo-box" onclick="openLightbox('${item.photo}')">
+              <img src="${item.photo}" alt="${item.name}" loading="lazy">
+              <div class="card-photo-overlay">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                放大預覽
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="podium-card rank-${item.rank}-card">
+            <div class="card-top-badge">
+              <div class="badge-rank-title">
+                ${item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : '🥉'} ${item.rank_title}
+              </div>
+              <span class="badge-label">${item.badge}</span>
+            </div>
+            ${photoSection}
+            <div class="card-info">
+              <div class="winner-name-text">${item.name}</div>
+              <div class="winner-desc-text">${item.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      let extraSection = '';
+      if (data.group_photo) {
+        extraSection = `
+          <div class="group-photo-section">
+            <div class="group-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              全體選手與榮譽頒獎大合照
+            </div>
+            <div class="group-photo-container" onclick="openLightbox('${data.group_photo}')">
+              <img src="${data.group_photo}" alt="${data.group_caption}">
+              <div class="group-caption">${data.group_caption}</div>
+            </div>
+          </div>
+        `;
+      } else if (data.extra_photos && data.extra_photos.length > 0) {
+        const prepThumbs = data.extra_photos.map((src, idx) => `
+          <div class="prep-thumb-item" onclick="openLightbox('${src}')">
+            <img src="${src}" alt="賽事準備實況 ${idx+1}">
+          </div>
+        `).join('');
+
+        extraSection = `
+          <div class="group-photo-section">
+            <div class="group-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              賽事實況與選手熱身花絮精選
+            </div>
+            <div class="prep-gallery-grid">
+              ${prepThumbs}
+            </div>
+          </div>
+        `;
+      }
+
+      modalContent.innerHTML = `
+        <div class="modal-lead-desc">${data.desc}</div>
+        <div class="podium-grid">
+          ${podiumCardsHtml}
+        </div>
+        ${extraSection}
+      `;
+
+      modal.classList.add('open');
+    }
+
+    function closeModal() {
+      isModalOpen = false;
+      if (controls) controls.enabled = true;
+      modal.classList.remove('open');
+    }
+
+    btnCloseModal.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    /* Lightbox */
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+
+    window.openLightbox = function(src) {
+      if (!src) return;
+      soundSystem.playPing(1280, 0.05, false, 0);
+      lightboxImg.src = src;
+      lightbox.classList.add('active');
+    };
+
+    lightbox.addEventListener('click', () => {
+      lightbox.classList.remove('active');
+    });
+
+    /* Spatial Label & Bottom Tab Controls */
+    document.querySelectorAll('.orb-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        focusPlanet(tab.getAttribute('data-target'));
+      });
+    });
+
+    document.querySelectorAll('.spatial-label').forEach(lbl => {
+      lbl.addEventListener('click', () => {
+        focusPlanet(lbl.getAttribute('data-key'));
+      });
+    });
+
+    /* Header Controls */
+    document.getElementById('btn-reset').addEventListener('click', resetCamera);
+
+    document.getElementById('btn-hit').addEventListener('click', () => {
+      triggerTableTennisHit('smash', 0);
+    });
+
+    const btnSound = document.getElementById('btn-sound');
+    const soundText = document.getElementById('sound-text');
+    btnSound.addEventListener('click', () => {
+      const isOn = soundSystem.toggle();
+      soundText.textContent = `桌球音效: ${isOn ? '開' : '關'}`;
+      btnSound.classList.toggle('active', isOn);
+    });
+
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1') focusPlanet('singles');
+      if (e.key === '2') focusPlanet('doubles');
+      if (e.key === '3') focusPlanet('prep');
+      if (e.key === 'Escape') {
+        closeModal();
+        lightbox.classList.remove('active');
+      }
+      if (e.key === ' ') {
+        e.preventDefault();
+        triggerTableTennisHit('smash', 0);
+      }
+    });
+
+    window.addEventListener('load', initWebGL);
+  </script>
+</body>
+</html>
+'''
+
+# Deploy to all target locations
+paths = [
+    r'E:\2026GEM-SKILL\table-tennis-cosmic-arena\index.html',
+    r'E:\2026GEM-SKILL\index.html',
+    r'E:\2026GEM-SKILL\115年度連江縣體育季桌球錦標賽_3D太空展館.html',
+    r'C:\Users\A1547\.gemini\antigravity\brain\01ae478b-5840-417e-8783-95119ece3e7b\115年度連江縣體育季桌球錦標賽_3D太空展館.html'
+]
+
+for p in paths:
+    with open(p, 'w', encoding='utf-8') as f:
+        f.write(html_code)
+    print(f"Deployed Pro WebGL HTML -> {p} ({os.path.getsize(p)/1024:.2f} KB)")
