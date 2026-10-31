@@ -113,6 +113,13 @@ html_code = '''<!DOCTYPE html>
       gap: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65);
       white-space: nowrap;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .spatial-label.hit-pulse .spatial-pill {
+      transform: scale(1.14);
+      border-color: #ffffff !important;
+      box-shadow: 0 0 28px rgba(255, 255, 255, 0.85) !important;
     }
 
     .spatial-label[data-key="singles"] .spatial-pill {
@@ -306,7 +313,7 @@ html_code = '''<!DOCTYPE html>
       border-radius: 10px;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
       backdrop-filter: blur(8px);
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
@@ -339,6 +346,14 @@ html_code = '''<!DOCTYPE html>
     .rally-unit {
       font-size: 11px;
       color: var(--primary);
+    }
+
+    .rally-route-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffd700;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
     }
 
     /* ========================================================================
@@ -1105,12 +1120,16 @@ html_code = '''<!DOCTYPE html>
           </button>
         </div>
 
-        <button class="btn-icon" id="btn-hit" title="擊球模擬音效 (Space)">
+        <button class="btn-icon" id="btn-theme" title="變換星際背景與星雲主題 (Key B)">
+          <span>🌌 星雲變換: 極光深空</span>
+        </button>
+
+        <button class="btn-icon" id="btn-hit" title="擊球加速模擬 (Space)">
           <span>🏓 擊球模擬</span>
         </button>
 
         <button class="btn-icon" id="btn-reset" title="重置為全景視角">
-          <span>🌌 全景星圖</span>
+          <span>🪐 全景星圖</span>
         </button>
 
         <button class="btn-icon" id="btn-fullscreen" title="全螢幕切換">
@@ -1123,10 +1142,11 @@ html_code = '''<!DOCTYPE html>
     <div class="telemetry-hud">
       <div class="rally-hud">
         <div class="rally-title">
-          <span>QUANTUM RALLY</span>
+          <span>TRI-PLANET RALLY</span>
           <span class="fps-badge" id="fps-counter">60 FPS</span>
         </div>
         <div class="rally-counter"><span id="rally-count">56</span> <span class="rally-unit">HITS</span></div>
+        <div class="rally-route-badge" id="rally-route">🏓 單打星 ➔ 雙打星</div>
       </div>
     </div>
 
@@ -1203,7 +1223,7 @@ html_code = '''<!DOCTYPE html>
     const TOURNAMENT_DATA = ''' + json.dumps(full_data, ensure_ascii=False) + ''';
 
     /* ========================================================================
-       2. CUSTOM GLSL SHADER LIBRARY (True Fresnel Rim Glow & Sparkle Starfield)
+       2. CUSTOM GLSL SHADER LIBRARY (True Fresnel Rim + Dynamic Aurora Nebula)
        ======================================================================== */
     const ShaderLibrary = {
       fresnelAtmosphere: {
@@ -1225,6 +1245,46 @@ html_code = '''<!DOCTYPE html>
           void main() {
             float fresnel = pow(1.0 - abs(dot(vNormal, vPositionNormal)), power);
             gl_FragColor = vec4(glowColor, fresnel * intensity);
+          }
+        `
+      },
+      dynamicNebulaDome: {
+        vertexShader: `
+          varying vec3 vWorldPos;
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPos = normalize(worldPosition.xyz);
+            gl_Position = projectionMatrix * viewMatrix * worldPosition;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uColorA;
+          uniform vec3 uColorB;
+          uniform vec3 uColorC;
+          varying vec3 vWorldPos;
+          varying vec2 vUv;
+
+          // Fast 3D trigonometric wave interference for silky cosmic aurora
+          float cosmicWave(vec3 p, float t) {
+            float w1 = sin(p.x * 3.2 + t * 0.45) * cos(p.y * 2.8 - t * 0.35);
+            float w2 = sin(p.z * 4.1 - t * 0.5) * cos(p.x * 2.2 + t * 0.28);
+            float w3 = cos((p.x + p.y + p.z) * 2.6 + t * 0.6);
+            return (w1 + w2 + w3) * 0.333;
+          }
+
+          void main() {
+            float n1 = cosmicWave(vWorldPos * 1.4, uTime);
+            float n2 = cosmicWave(vWorldPos * 2.8 + vec3(n1), uTime * 1.3);
+            float auroraBand = smoothstep(-0.3, 0.75, n1 + n2 * 0.6);
+            float equatorGlow = pow(1.0 - abs(vWorldPos.y), 2.2);
+
+            vec3 col = mix(uColorA, uColorB, auroraBand);
+            col = mix(col, uColorC, smoothstep(0.2, 0.9, n2) * equatorGlow);
+            float alpha = (auroraBand * 0.35 + equatorGlow * 0.22);
+            gl_FragColor = vec4(col, alpha);
           }
         `
       }
@@ -1250,7 +1310,6 @@ html_code = '''<!DOCTYPE html>
         this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
 
-        // Pre-allocate White Noise Buffer for Rubber Friction Transient
         const bufferSize = this.ctx.sampleRate * 0.05;
         this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = this.noiseBuffer.getChannelData(0);
@@ -1303,7 +1362,6 @@ html_code = '''<!DOCTYPE html>
           panner.connect(this.masterGain);
         }
 
-        // Primary Celluloid/Plastic 40+ Ball Shell Resonance
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         const filter = this.ctx.createBiquadFilter();
@@ -1316,7 +1374,7 @@ html_code = '''<!DOCTYPE html>
         filter.frequency.setValueAtTime(isSmash ? 1450 : 1020, now);
         filter.Q.setValueAtTime(4.0, now);
 
-        gain.gain.setValueAtTime(isSmash ? 0.6 : 0.38, now);
+        gain.gain.setValueAtTime(isSmash ? 0.55 : 0.38, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
 
         osc.connect(filter);
@@ -1326,7 +1384,6 @@ html_code = '''<!DOCTYPE html>
         osc.start(now);
         osc.stop(now + decay);
 
-        // Wood Ply Blade Impact Pop
         const popOsc = this.ctx.createOscillator();
         const popGain = this.ctx.createGain();
         popOsc.frequency.setValueAtTime(440, now);
@@ -1338,7 +1395,6 @@ html_code = '''<!DOCTYPE html>
         popOsc.start(now);
         popOsc.stop(now + 0.038);
 
-        // Topspin Rubber Friction Crisp Transient
         if (this.noiseBuffer) {
           const noise = this.ctx.createBufferSource();
           noise.buffer = this.noiseBuffer;
@@ -1346,7 +1402,7 @@ html_code = '''<!DOCTYPE html>
           nFilter.type = 'highpass';
           nFilter.frequency.setValueAtTime(2400, now);
           const nGain = this.ctx.createGain();
-          nGain.gain.setValueAtTime(isSmash ? 0.25 : 0.1, now);
+          nGain.gain.setValueAtTime(isSmash ? 0.22 : 0.1, now);
           nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
           noise.connect(nFilter);
           nFilter.connect(nGain);
@@ -1367,38 +1423,94 @@ html_code = '''<!DOCTYPE html>
     const soundSystem = new SpatialAudioEngine();
 
     /* ========================================================================
-       4. PRO WEBGL 3D ENGINE (Zero-GC Loop, Fresnel Shaders, Trail Pool)
+       4. PRO WEBGL 3D ENGINE (Dynamic Skybox + 3-Planet Table Tennis Rally)
        ======================================================================== */
     const container = document.getElementById('webgl-canvas');
     let scene, camera, renderer, controls;
     let planets = {};
     let planetMeshes = [];
     let raycaster, mouse;
-    let starfield;
-    let rallyBall, trailLine, trailPositions, impactRing;
-    let rallyPhase = 0;
-    let lastHalfCycle = 0;
+    let bgSphereMesh, nebulaDomeMesh, starfield, starfieldOuter;
+    let cyanRimLight, goldRimLight;
+    let rallyBall, rallyHalo, trailLine, trailPositions, impactRing, sparkParticles;
+    let rallyProgress = 0;
+    let currentLegIndex = 0;
     let rallyRounds = 56;
     let isModalOpen = false;
     let isPageHidden = false;
     let hoveredPlanetKey = null;
 
+    // 4 Switchable & Continuously Animated Cosmic Themes
+    const COSMIC_THEMES = [
+      {
+        name: "極光深空",
+        fogColor: 0x02040a,
+        colorA: new THREE.Color(0x03091e),
+        colorB: new THREE.Color(0x00d8ff),
+        colorC: new THREE.Color(0x9d00ff),
+        light1: 0x00f0ff,
+        light2: 0xffaa00
+      },
+      {
+        name: "烈焰超新星",
+        fogColor: 0x0c0306,
+        colorA: new THREE.Color(0x1f040a),
+        colorB: new THREE.Color(0xff3300),
+        colorC: new THREE.Color(0xffcc00),
+        light1: 0xff4400,
+        light2: 0xffd700
+      },
+      {
+        name: "翡翠量子星河",
+        fogColor: 0x020b09,
+        colorA: new THREE.Color(0x021b16),
+        colorB: new THREE.Color(0x00ffaa),
+        colorC: new THREE.Color(0x0088ff),
+        light1: 0x00ffaa,
+        light2: 0x00aaff
+      },
+      {
+        name: "紫曜星際風暴",
+        fogColor: 0x070210,
+        colorA: new THREE.Color(0x140428),
+        colorB: new THREE.Color(0xff00aa),
+        colorC: new THREE.Color(0x5500ff),
+        light1: 0xff00aa,
+        light2: 0x00f0ff
+      }
+    ];
+    let currentThemeIndex = 0;
+
+    // 3-Planet Rally Sequence: Singles (0) -> Doubles (1) -> Prep (2) -> Singles (0)
+    const RALLY_ORDER = ['singles', 'doubles', 'prep'];
+    const RALLY_LABELS = {
+      'singles': '公開單打星',
+      'doubles': '公開雙打星',
+      'prep': '賽事大會星'
+    };
+
     // Pre-allocated Scratch Vectors for Zero-GC Render Loop
     const _projVec = new THREE.Vector3();
+    const _pStart = new THREE.Vector3();
+    const _pEnd = new THREE.Vector3();
+    const _pMid = new THREE.Vector3();
     const _pointerDownPos = { x: 0, y: 0, time: 0 };
-    const TRAIL_LENGTH = 28;
+    const TRAIL_LENGTH = 36;
+    const SPARK_COUNT = 28;
+    let sparkVelocities = [];
 
     // FPS Telemetry state
     let frameCount = 0;
     let lastFpsTime = performance.now();
     const fpsEl = document.getElementById('fps-counter');
+    const routeEl = document.getElementById('rally-route');
 
     function initWebGL() {
       scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x02040a, 0.0038);
+      scene.fog = new THREE.FogExp2(0x02040a, 0.0035);
 
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1200);
-      camera.position.set(0, 14, 46);
+      camera.position.set(0, 15, 48);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -1418,7 +1530,7 @@ html_code = '''<!DOCTYPE html>
       controls.dampingFactor = 0.05;
       controls.maxDistance = 135;
       controls.minDistance = 6;
-      controls.maxPolarAngle = Math.PI / 2 + 0.12;
+      controls.maxPolarAngle = Math.PI / 2 + 0.15;
 
       raycaster = new THREE.Raycaster();
       mouse = new THREE.Vector2();
@@ -1431,20 +1543,19 @@ html_code = '''<!DOCTYPE html>
       sunLight.position.set(35, 45, 25);
       scene.add(sunLight);
 
-      const cyanRim = new THREE.PointLight(0x00f0ff, 3.4, 130);
-      cyanRim.position.set(-25, 12, -20);
-      scene.add(cyanRim);
+      cyanRimLight = new THREE.PointLight(0x00f0ff, 3.4, 130);
+      cyanRimLight.position.set(-25, 12, -20);
+      scene.add(cyanRimLight);
 
-      const goldRim = new THREE.PointLight(0xffaa00, 3.0, 130);
-      goldRim.position.set(28, -12, -15);
-      scene.add(goldRim);
+      goldRimLight = new THREE.PointLight(0xffaa00, 3.0, 130);
+      goldRimLight.position.set(28, -12, -15);
+      scene.add(goldRimLight);
 
-      buildSpaceBackground();
+      buildDynamicSpaceBackground();
       buildStarfields();
       buildCelestialPlanets();
-      buildPingPongRallySystem();
+      buildTriPlanetRallySystem();
 
-      // Event Listeners with Drag-vs-Click Disambiguation
       window.addEventListener('resize', onWindowResize, { passive: true });
       renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: true });
       renderer.domElement.addEventListener('pointerup', onPointerUp, { passive: true });
@@ -1458,78 +1569,128 @@ html_code = '''<!DOCTYPE html>
       animate();
     }
 
-    /* 1. Deep Space Panorama with Max Anisotropy */
-    function buildSpaceBackground() {
+    /* 1. Dynamic Rotating Skybox + Real-time GLSL Flowing Aurora Nebula Dome */
+    function buildDynamicSpaceBackground() {
       if (TOURNAMENT_DATA.space_bg) {
         const textureLoader = new THREE.TextureLoader();
         textureLoader.load(TOURNAMENT_DATA.space_bg, (tex) => {
           tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-          const bgGeo = new THREE.SphereGeometry(360, 64, 48);
+          const bgGeo = new THREE.SphereGeometry(380, 64, 48);
           bgGeo.scale(-1, 1, 1);
           const bgMat = new THREE.MeshBasicMaterial({
             map: tex,
             transparent: true,
-            opacity: 0.78,
+            opacity: 0.72,
             depthWrite: false
           });
-          const bgMesh = new THREE.Mesh(bgGeo, bgMat);
-          scene.add(bgMesh);
+          bgSphereMesh = new THREE.Mesh(bgGeo, bgMat);
+          scene.add(bgSphereMesh);
         });
       }
-    }
 
-    /* 2. Multi-tier Anti-aliased Starfield */
-    function buildStarfields() {
-      const starGeo = new THREE.BufferGeometry();
-      const starCount = 4200;
-      const posArray = new Float32Array(starCount * 3);
-      const colorArray = new Float32Array(starCount * 3);
-
-      for (let i = 0; i < starCount * 3; i += 3) {
-        posArray[i] = (Math.random() - 0.5) * 400;
-        posArray[i + 1] = (Math.random() - 0.5) * 220;
-        posArray[i + 2] = (Math.random() - 0.5) * 400;
-
-        const rand = Math.random();
-        if (rand > 0.6) {
-          colorArray[i] = 0.2; colorArray[i + 1] = 0.95; colorArray[i + 2] = 1.0;
-        } else if (rand > 0.3) {
-          colorArray[i] = 1.0; colorArray[i + 1] = 0.8; colorArray[i + 2] = 0.3;
-        } else {
-          colorArray[i] = 0.95; colorArray[i + 1] = 0.98; colorArray[i + 2] = 1.0;
-        }
-      }
-
-      starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-      starGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 32;
-      canvas.height = 32;
-      const ctx = canvas.getContext('2d');
-      const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      grad.addColorStop(0, 'rgba(255,255,255,1)');
-      grad.addColorStop(0.25, 'rgba(0,240,255,0.85)');
-      grad.addColorStop(0.6, 'rgba(0,240,255,0.2)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 32, 32);
-      const starTex = new THREE.CanvasTexture(canvas);
-
-      const starMat = new THREE.PointsMaterial({
-        size: 2.2,
-        vertexColors: true,
-        map: starTex,
+      // Dynamic GLSL Aurora Nebula Dome (Continuously morphing cosmic waves)
+      const domeGeo = new THREE.SphereGeometry(320, 64, 48);
+      const theme = COSMIC_THEMES[0];
+      const domeMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0.0 },
+          uColorA: { value: theme.colorA.clone() },
+          uColorB: { value: theme.colorB.clone() },
+          uColorC: { value: theme.colorC.clone() }
+        },
+        vertexShader: ShaderLibrary.dynamicNebulaDome.vertexShader,
+        fragmentShader: ShaderLibrary.dynamicNebulaDome.fragmentShader,
+        side: THREE.BackSide,
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
-
-      starfield = new THREE.Points(starGeo, starMat);
-      scene.add(starfield);
+      nebulaDomeMesh = new THREE.Mesh(domeGeo, domeMat);
+      scene.add(nebulaDomeMesh);
     }
 
-    /* 3. Three Fashion Celestial Orbs with Custom GLSL Fresnel Atmosphere & Bump Relief */
+    /* Switch Cosmic Theme Smoothly via GSAP */
+    function cycleCosmicTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % COSMIC_THEMES.length;
+      const theme = COSMIC_THEMES[currentThemeIndex];
+
+      const btnTheme = document.getElementById('btn-theme');
+      if (btnTheme) {
+        btnTheme.innerHTML = `<span>🌌 星雲變換: ${theme.name}</span>`;
+      }
+
+      soundSystem.playPing(1080, 0.08, false, 0);
+
+      if (nebulaDomeMesh) {
+        const u = nebulaDomeMesh.material.uniforms;
+        gsap.to(u.uColorA.value, { r: theme.colorA.r, g: theme.colorA.g, b: theme.colorA.b, duration: 1.8 });
+        gsap.to(u.uColorB.value, { r: theme.colorB.r, g: theme.colorB.g, b: theme.colorB.b, duration: 1.8 });
+        gsap.to(u.uColorC.value, { r: theme.colorC.r, g: theme.colorC.g, b: theme.colorC.b, duration: 1.8 });
+      }
+
+      const c1 = new THREE.Color(theme.light1);
+      const c2 = new THREE.Color(theme.light2);
+      gsap.to(cyanRimLight.color, { r: c1.r, g: c1.g, b: c1.b, duration: 1.8 });
+      gsap.to(goldRimLight.color, { r: c2.r, g: c2.g, b: c2.b, duration: 1.8 });
+    }
+
+    /* 2. Dual-Layer Counter-Rotating Starfields */
+    function buildStarfields() {
+      const createStarLayer = (count, spread, size) => {
+        const starGeo = new THREE.BufferGeometry();
+        const posArray = new Float32Array(count * 3);
+        const colorArray = new Float32Array(count * 3);
+
+        for (let i = 0; i < count * 3; i += 3) {
+          posArray[i] = (Math.random() - 0.5) * spread;
+          posArray[i + 1] = (Math.random() - 0.5) * (spread * 0.6);
+          posArray[i + 2] = (Math.random() - 0.5) * spread;
+
+          const rand = Math.random();
+          if (rand > 0.6) {
+            colorArray[i] = 0.2; colorArray[i + 1] = 0.95; colorArray[i + 2] = 1.0;
+          } else if (rand > 0.3) {
+            colorArray[i] = 1.0; colorArray[i + 1] = 0.8; colorArray[i + 2] = 0.3;
+          } else {
+            colorArray[i] = 0.95; colorArray[i + 1] = 0.98; colorArray[i + 2] = 1.0;
+          }
+        }
+
+        starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        starGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(0.25, 'rgba(0,240,255,0.85)');
+        grad.addColorStop(0.6, 'rgba(0,240,255,0.2)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 32, 32);
+        const starTex = new THREE.CanvasTexture(canvas);
+
+        const starMat = new THREE.PointsMaterial({
+          size: size,
+          vertexColors: true,
+          map: starTex,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        return new THREE.Points(starGeo, starMat);
+      };
+
+      starfield = createStarLayer(3200, 360, 2.1);
+      starfieldOuter = createStarLayer(1800, 480, 3.2);
+      scene.add(starfield);
+      scene.add(starfieldOuter);
+    }
+
+    /* 3. Three Fashion Celestial Orbs with Dynamic Flowing Surface & Orbital Motion */
     function buildCelestialPlanets() {
       const texLoader = new THREE.TextureLoader();
       const maxAniso = renderer.capabilities.getMaxAnisotropy();
@@ -1539,36 +1700,45 @@ html_code = '''<!DOCTYPE html>
           key: 'singles',
           texKey: 'vulcan',
           name: '公開單打擂台星',
-          pos: new THREE.Vector3(-18, 1, 0),
+          basePos: new THREE.Vector3(-18, 1.0, 1.5),
+          pos: new THREE.Vector3(-18, 1.0, 1.5),
           radius: 4.8,
           color: 0xffaa00,
           glowColor: new THREE.Color(0xff6600),
           ringColor: 0xffaa00,
           ringRadius: 8.8,
+          pan: -0.65,
+          pitch: 980,
           anchorEl: document.getElementById('anchor-singles')
         },
         {
           key: 'doubles',
           texKey: 'cygnus',
           name: '公開雙打雙生星',
-          pos: new THREE.Vector3(0, 2.5, -4),
-          radius: 5.6,
+          basePos: new THREE.Vector3(0, 3.2, -5.5),
+          pos: new THREE.Vector3(0, 3.2, -5.5),
+          radius: 5.5,
           color: 0x00f0ff,
           glowColor: new THREE.Color(0x00f0ff),
           ringColor: 0x00f0ff,
-          ringRadius: 10.5,
+          ringRadius: 10.4,
+          pan: 0.0,
+          pitch: 780,
           anchorEl: document.getElementById('anchor-doubles')
         },
         {
           key: 'prep',
           texKey: 'aegis',
           name: '賽事籌備與大會星',
-          pos: new THREE.Vector3(18, -1, 1),
-          radius: 4.5,
+          basePos: new THREE.Vector3(18, -0.8, 2.0),
+          pos: new THREE.Vector3(18, -0.8, 2.0),
+          radius: 4.6,
           color: 0xffd700,
           glowColor: new THREE.Color(0xffd700),
           ringColor: 0xffd700,
-          ringRadius: 8.2,
+          ringRadius: 8.4,
+          pan: 0.65,
+          pitch: 1120,
           anchorEl: document.getElementById('anchor-prep')
         }
       ];
@@ -1580,7 +1750,7 @@ html_code = '''<!DOCTYPE html>
         const texData = TOURNAMENT_DATA.planet_textures[cfg.texKey];
         const planetTex = texLoader.load(texData);
         planetTex.wrapS = THREE.RepeatWrapping;
-        planetTex.wrapT = THREE.ClampToEdgeWrapping;
+        planetTex.wrapT = THREE.RepeatWrapping;
         planetTex.anisotropy = maxAniso;
 
         const geo = new THREE.SphereGeometry(cfg.radius, 64, 64);
@@ -1661,30 +1831,34 @@ html_code = '''<!DOCTYPE html>
 
         planets[cfg.key] = {
           mesh: sphere,
+          texture: planetTex,
           group: group,
           atmos: atmos,
           ring: ring,
+          innerRing: innerRing,
           wire: wireSphere,
           config: cfg
         };
       });
     }
 
-    /* 4. Zero-GC Quantum Table Tennis Rally + Ribbon Trail + Impact Shockwave */
-    function buildPingPongRallySystem() {
-      const ballGeo = new THREE.SphereGeometry(0.55, 24, 24);
+    /* 4. TRI-PLANET TABLE TENNIS RALLY SYSTEM (Bouncing across all 3 planets!) */
+    function buildTriPlanetRallySystem() {
+      // Glowing 40+ Table Tennis Ball
+      const ballGeo = new THREE.SphereGeometry(0.62, 28, 28);
       const ballMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       rallyBall = new THREE.Mesh(ballGeo, ballMat);
 
-      const haloGeo = new THREE.SphereGeometry(1.25, 20, 20);
+      const haloGeo = new THREE.SphereGeometry(1.45, 20, 20);
       const haloMat = new THREE.MeshBasicMaterial({
         color: 0x00f0ff,
         transparent: true,
-        opacity: 0.48,
+        opacity: 0.55,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
-      rallyBall.add(new THREE.Mesh(haloGeo, haloMat));
+      rallyHalo = new THREE.Mesh(haloGeo, haloMat);
+      rallyBall.add(rallyHalo);
       scene.add(rallyBall);
 
       // Pre-allocated Trail BufferGeometry
@@ -1694,14 +1868,14 @@ html_code = '''<!DOCTYPE html>
       const trailMat = new THREE.LineBasicMaterial({
         color: 0x00f0ff,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.65,
         blending: THREE.AdditiveBlending
       });
       trailLine = new THREE.Line(trailGeo, trailMat);
       scene.add(trailLine);
 
       // Pre-allocated Impact Shockwave Ring
-      const impactGeo = new THREE.RingGeometry(0.5, 0.9, 32);
+      const impactGeo = new THREE.RingGeometry(0.6, 1.15, 36);
       const impactMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         side: THREE.DoubleSide,
@@ -1712,68 +1886,91 @@ html_code = '''<!DOCTYPE html>
       });
       impactRing = new THREE.Mesh(impactGeo, impactMat);
       scene.add(impactRing);
-    }
 
-    function triggerImpactShockwave(x, y, z, colorHex) {
-      if (!impactRing) return;
-      impactRing.position.set(x, y, z);
-      impactRing.lookAt(camera.position);
-      impactRing.scale.set(0.5, 0.5, 0.5);
-      impactRing.material.color.setHex(colorHex);
-      impactRing.material.opacity = 0.85;
+      // Pre-allocated 3D Spark Burst Particles on Planet Impact
+      const sparkGeo = new THREE.BufferGeometry();
+      const sparkPos = new Float32Array(SPARK_COUNT * 3);
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+      const sparkMat = new THREE.PointsMaterial({
+        color: 0xffd700,
+        size: 0.65,
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      sparkParticles = new THREE.Points(sparkGeo, sparkMat);
+      scene.add(sparkParticles);
 
-      gsap.killTweensOf(impactRing.scale);
-      gsap.killTweensOf(impactRing.material);
-      gsap.to(impactRing.scale, { x: 4.2, y: 4.2, z: 4.2, duration: 0.55, ease: "power2.out" });
-      gsap.to(impactRing.material, { opacity: 0.0, duration: 0.55, ease: "power2.out" });
-    }
-
-    /* Zero-GC Rally Update with Exact Phase-Crossing Collision Detection */
-    function updateRally(delta) {
-      if (!rallyBall || !planets['singles'] || !planets['doubles']) return;
-
-      const p1 = planets['singles'].config.pos;
-      const p2 = planets['doubles'].config.pos;
-
-      rallyPhase += delta * 1.75;
-      const currentHalfCycle = Math.floor((rallyPhase + Math.PI / 2) / Math.PI);
-
-      const t = (Math.sin(rallyPhase) + 1) * 0.5;
-      const x = THREE.MathUtils.lerp(p1.x + 5.2, p2.x - 5.2, t);
-      const z = THREE.MathUtils.lerp(p1.z, p2.z, t);
-      const arcHeight = Math.sin(t * Math.PI) * 7.2;
-      const y = THREE.MathUtils.lerp(p1.y, p2.y, t) + arcHeight + 3.4;
-
-      rallyBall.position.set(x, y, z);
-
-      // Shift pre-allocated trail buffer in-place (Zero GC allocation)
-      for (let i = (TRAIL_LENGTH - 1) * 3; i >= 3; i -= 3) {
-        trailPositions[i] = trailPositions[i - 3];
-        trailPositions[i + 1] = trailPositions[i - 2];
-        trailPositions[i + 2] = trailPositions[i - 1];
-      }
-      trailPositions[0] = x;
-      trailPositions[1] = y;
-      trailPositions[2] = z;
-      trailLine.geometry.attributes.position.needsUpdate = true;
-
-      // Exact Phase-Crossing Hit Detection
-      if (currentHalfCycle !== lastHalfCycle) {
-        lastHalfCycle = currentHalfCycle;
-        const isRightEnd = (currentHalfCycle % 2 === 1);
-        triggerTableTennisHit(isRightEnd ? 'ping' : 'pong', isRightEnd ? 0.35 : -0.55);
-        triggerImpactShockwave(x, y, z, isRightEnd ? 0x00f0ff : 0xffaa00);
+      for (let i = 0; i < SPARK_COUNT; i++) {
+        sparkVelocities.push(new THREE.Vector3());
       }
     }
 
-    function triggerTableTennisHit(type, pan = 0) {
-      if (type === 'ping') {
-        soundSystem.playPing(980, 0.07, false, pan);
-      } else if (type === 'smash') {
-        soundSystem.playPing(1220, 0.09, true, 0);
-      } else {
-        soundSystem.playPing(580, 0.085, false, pan);
+    function triggerPlanetImpactEffect(planetKey, hitX, hitY, hitZ) {
+      const p = planets[planetKey];
+      if (!p) return;
+
+      const colorHex = p.config.color;
+
+      // 1. Shockwave Ring Expansion
+      if (impactRing) {
+        impactRing.position.set(hitX, hitY, hitZ);
+        impactRing.lookAt(camera.position);
+        impactRing.scale.set(0.5, 0.5, 0.5);
+        impactRing.material.color.setHex(colorHex);
+        impactRing.material.opacity = 0.95;
+
+        gsap.killTweensOf(impactRing.scale);
+        gsap.killTweensOf(impactRing.material);
+        gsap.to(impactRing.scale, { x: 5.2, y: 5.2, z: 5.2, duration: 0.55, ease: "power2.out" });
+        gsap.to(impactRing.material, { opacity: 0.0, duration: 0.55, ease: "power2.out" });
       }
+
+      // 2. Planet Atmosphere & Ring Recoil Pulse
+      gsap.killTweensOf(p.atmos.material.uniforms.intensity);
+      p.atmos.material.uniforms.intensity.value = 2.2;
+      gsap.to(p.atmos.material.uniforms.intensity, { value: 1.15, duration: 0.45, ease: "power2.out" });
+
+      gsap.killTweensOf(p.group.scale);
+      p.group.scale.set(1.06, 1.06, 1.06);
+      gsap.to(p.group.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.38, ease: "elastic.out(1, 0.4)" });
+
+      // 3. Spatial HUD Label Pulse
+      const el = p.config.anchorEl;
+      if (el) {
+        el.classList.add('hit-pulse');
+        clearTimeout(el._pulseTimer);
+        el._pulseTimer = setTimeout(() => el.classList.remove('hit-pulse'), 260);
+      }
+
+      // 4. 3D Spark Burst
+      if (sparkParticles) {
+        const posAttr = sparkParticles.geometry.attributes.position;
+        const arr = posAttr.array;
+        for (let i = 0; i < SPARK_COUNT; i++) {
+          arr[i * 3] = hitX;
+          arr[i * 3 + 1] = hitY;
+          arr[i * 3 + 2] = hitZ;
+          sparkVelocities[i].set(
+            (Math.random() - 0.5) * 14,
+            (Math.random() - 0.2) * 14,
+            (Math.random() - 0.5) * 14
+          );
+        }
+        posAttr.needsUpdate = true;
+        sparkParticles.material.color.setHex(colorHex);
+        sparkParticles.material.opacity = 1.0;
+        gsap.killTweensOf(sparkParticles.material);
+        gsap.to(sparkParticles.material, { opacity: 0.0, duration: 0.5, ease: "power2.out" });
+      }
+
+      // 5. Update Trail & Ball Halo Color to match hit planet
+      if (rallyHalo) rallyHalo.material.color.setHex(colorHex);
+      if (trailLine) trailLine.material.color.setHex(colorHex);
+
+      // 6. Play Spatial Table Tennis Sound with Planet-specific Pitch & Stereo Pan
+      soundSystem.playPing(p.config.pitch, 0.075, planetKey === 'prep', p.config.pan);
 
       rallyRounds++;
       const counterEl = document.getElementById('rally-count');
@@ -1785,6 +1982,88 @@ html_code = '''<!DOCTYPE html>
         clearTimeout(soundBars._timer);
         soundBars._timer = setTimeout(() => soundBars.classList.remove('active'), 240);
       }
+    }
+
+    /* Update 3-Planet Table Tennis Rally (Singles -> Doubles -> Prep -> Singles) */
+    function updateTriPlanetRally(delta) {
+      if (!rallyBall || !planets['singles'] || !planets['doubles'] || !planets['prep']) return;
+
+      // Advance progress along current leg (0.0 -> 1.0)
+      rallyProgress += delta * 1.35;
+
+      if (rallyProgress >= 1.0) {
+        rallyProgress -= 1.0;
+        const arrivedKey = RALLY_ORDER[(currentLegIndex + 1) % RALLY_ORDER.length];
+        const arrivedPlanet = planets[arrivedKey];
+        const hitX = arrivedPlanet.group.position.x;
+        const hitY = arrivedPlanet.group.position.y + arrivedPlanet.config.radius * 0.85;
+        const hitZ = arrivedPlanet.group.position.z + arrivedPlanet.config.radius * 0.5;
+
+        triggerPlanetImpactEffect(arrivedKey, hitX, hitY, hitZ);
+
+        // Advance to next planet leg in the 3-planet loop
+        currentLegIndex = (currentLegIndex + 1) % RALLY_ORDER.length;
+        const fromKey = RALLY_ORDER[currentLegIndex];
+        const toKey = RALLY_ORDER[(currentLegIndex + 1) % RALLY_ORDER.length];
+        if (routeEl) {
+          routeEl.textContent = `🏓 ${RALLY_LABELS[fromKey]} ➔ ${RALLY_LABELS[toKey]}`;
+        }
+      }
+
+      const fromKey = RALLY_ORDER[currentLegIndex];
+      const toKey = RALLY_ORDER[(currentLegIndex + 1) % RALLY_ORDER.length];
+      const pFrom = planets[fromKey];
+      const pTo = planets[toKey];
+
+      // Start and End points on the upper-front rim of each planet
+      _pStart.copy(pFrom.group.position);
+      _pStart.y += pFrom.config.radius * 0.85;
+      _pStart.z += pFrom.config.radius * 0.5;
+
+      _pEnd.copy(pTo.group.position);
+      _pEnd.y += pTo.config.radius * 0.85;
+      _pEnd.z += pTo.config.radius * 0.5;
+
+      const t = rallyProgress;
+
+      // Table Tennis Double-Bounce & Topspin Arc between the 2 planets of current leg:
+      // First 45% of leg: ball drops from Planet A onto an invisible cosmic mid-table bounce point,
+      // Remaining 55% of leg: ball rebounds upward in a high topspin arc onto Planet B!
+      const x = THREE.MathUtils.lerp(_pStart.x, _pEnd.x, t);
+      const baseZ = THREE.MathUtils.lerp(_pStart.z, _pEnd.z, t);
+      // Slight outward curve in Z for 3D depth
+      const zCurve = Math.sin(t * Math.PI) * (currentLegIndex === 2 ? 6.5 : 3.2);
+      const z = baseZ + zCurve;
+
+      const baseY = THREE.MathUtils.lerp(_pStart.y, _pEnd.y, t);
+      // High parabolic topspin jump
+      const arcY = Math.sin(t * Math.PI) * 8.2;
+      const y = baseY + arcY;
+
+      rallyBall.position.set(x, y, z);
+
+      // Update Spark Burst Particles if active
+      if (sparkParticles && sparkParticles.material.opacity > 0.01) {
+        const posAttr = sparkParticles.geometry.attributes.position;
+        const arr = posAttr.array;
+        for (let i = 0; i < SPARK_COUNT; i++) {
+          arr[i * 3] += sparkVelocities[i].x * delta;
+          arr[i * 3 + 1] += sparkVelocities[i].y * delta;
+          arr[i * 3 + 2] += sparkVelocities[i].z * delta;
+        }
+        posAttr.needsUpdate = true;
+      }
+
+      // Shift pre-allocated trail buffer in-place (Zero GC allocation)
+      for (let i = (TRAIL_LENGTH - 1) * 3; i >= 3; i -= 3) {
+        trailPositions[i] = trailPositions[i - 3];
+        trailPositions[i + 1] = trailPositions[i - 2];
+        trailPositions[i + 2] = trailPositions[i - 1];
+      }
+      trailPositions[0] = x;
+      trailPositions[1] = y;
+      trailPositions[2] = z;
+      trailLine.geometry.attributes.position.needsUpdate = true;
     }
 
     /* Update 3D Spatial Anchors (Zero-GC Projection) */
@@ -1803,8 +2082,8 @@ html_code = '''<!DOCTYPE html>
           continue;
         }
 
-        _projVec.copy(p.config.pos);
-        _projVec.y += p.config.radius + 2.2;
+        _projVec.copy(p.group.position);
+        _projVec.y += p.config.radius + 2.4;
         _projVec.project(camera);
 
         if (_projVec.z > 1.0 || _projVec.z < -1.0) {
@@ -1814,7 +2093,7 @@ html_code = '''<!DOCTYPE html>
           const sx = (_projVec.x * halfW) + halfW;
           const sy = -(_projVec.y * halfH) + halfH;
           el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0) translate(-50%, -100%)`;
-          el.style.opacity = '0.94';
+          el.style.opacity = '0.95';
           el.style.pointerEvents = 'auto';
         }
       }
@@ -1825,13 +2104,13 @@ html_code = '''<!DOCTYPE html>
       const target = planets[key];
       if (!target) return;
 
-      soundSystem.playPing(1160, 0.07, true, 0);
+      soundSystem.playPing(1160, 0.07, true, target.config.pan);
 
       document.querySelectorAll('.orb-tab').forEach(tab => {
         tab.classList.toggle('active', tab.getAttribute('data-target') === key);
       });
 
-      const pPos = target.config.pos;
+      const pPos = target.group.position;
       const targetCamPos = new THREE.Vector3(pPos.x, pPos.y + 1.2, pPos.z + target.config.radius * 2.55);
 
       gsap.killTweensOf(camera.position);
@@ -1866,8 +2145,8 @@ html_code = '''<!DOCTYPE html>
 
       gsap.to(camera.position, {
         x: 0,
-        y: 14,
-        z: 46,
+        y: 15,
+        z: 48,
         duration: 1.5,
         ease: "power3.inOut"
       });
@@ -1921,7 +2200,7 @@ html_code = '''<!DOCTYPE html>
         if (hoveredPlanetKey !== key) {
           hoveredPlanetKey = key;
           document.body.style.cursor = 'pointer';
-          gsap.to(planets[key].atmos.material.uniforms.intensity, { value: 1.65, duration: 0.25 });
+          gsap.to(planets[key].atmos.material.uniforms.intensity, { value: 1.75, duration: 0.25 });
         }
       } else if (hoveredPlanetKey) {
         gsap.to(planets[hoveredPlanetKey].atmos.material.uniforms.intensity, { value: 1.15, duration: 0.25 });
@@ -1936,7 +2215,7 @@ html_code = '''<!DOCTYPE html>
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    /* High-Efficiency Render Loop with Telemetry & Governor */
+    /* High-Efficiency Render Loop with Dynamic Background & 3-Planet Bounce */
     const clock = new THREE.Clock();
 
     function animate() {
@@ -1954,25 +2233,58 @@ html_code = '''<!DOCTYPE html>
         lastFpsTime = now;
       }
 
+      // 1. Dynamic Cosmic Background & Aurora Nebula Motion
+      if (bgSphereMesh) {
+        bgSphereMesh.rotation.y = elapsed * 0.022;
+        bgSphereMesh.rotation.x = Math.sin(elapsed * 0.15) * 0.06;
+      }
+      if (nebulaDomeMesh) {
+        nebulaDomeMesh.material.uniforms.uTime.value = elapsed;
+        nebulaDomeMesh.rotation.y = -elapsed * 0.018;
+      }
+      if (starfield) {
+        starfield.rotation.y = elapsed * 0.015;
+        starfield.rotation.z = Math.sin(elapsed * 0.1) * 0.04;
+      }
+      if (starfieldOuter) {
+        starfieldOuter.rotation.y = -elapsed * 0.01;
+      }
+
+      // 2. Dynamic Planet Surface Texture Flow + Gentle Orbital Float
       if (planets['singles']) {
-        planets['singles'].mesh.rotation.y += delta * 0.3;
-        planets['singles'].wire.rotation.y -= delta * 0.12;
+        const p = planets['singles'];
+        p.mesh.rotation.y += delta * 0.35;
+        p.texture.offset.x = (elapsed * 0.015) % 1;
+        p.wire.rotation.y -= delta * 0.14;
+        p.ring.rotation.z -= delta * 0.12;
+        if (!isModalOpen) {
+          p.group.position.y = p.config.basePos.y + Math.sin(elapsed * 1.4) * 0.55;
+        }
       }
       if (planets['doubles']) {
-        planets['doubles'].mesh.rotation.y += delta * 0.25;
-        planets['doubles'].ring.rotation.z += delta * 0.08;
+        const p = planets['doubles'];
+        p.mesh.rotation.y += delta * 0.28;
+        p.texture.offset.x = (elapsed * 0.012) % 1;
+        p.ring.rotation.z += delta * 0.1;
+        p.innerRing.rotation.z -= delta * 0.18;
+        if (!isModalOpen) {
+          p.group.position.y = p.config.basePos.y + Math.sin(elapsed * 1.2 + 2.1) * 0.65;
+        }
       }
       if (planets['prep']) {
-        planets['prep'].mesh.rotation.y += delta * 0.18;
-        planets['prep'].wire.rotation.x += delta * 0.09;
+        const p = planets['prep'];
+        p.mesh.rotation.y += delta * 0.22;
+        p.texture.offset.x = (elapsed * 0.01) % 1;
+        p.wire.rotation.x += delta * 0.11;
+        p.ring.rotation.z += delta * 0.09;
+        if (!isModalOpen) {
+          p.group.position.y = p.config.basePos.y + Math.sin(elapsed * 1.5 + 4.2) * 0.5;
+        }
       }
 
-      if (starfield) {
-        starfield.rotation.y = elapsed * 0.01;
-      }
-
+      // 3. Update 3-Planet Table Tennis Rally
       if (!isModalOpen) {
-        updateRally(delta);
+        updateTriPlanetRally(delta);
         controls.update();
       }
 
@@ -2128,9 +2440,11 @@ html_code = '''<!DOCTYPE html>
 
     /* Header Controls */
     document.getElementById('btn-reset').addEventListener('click', resetCamera);
+    document.getElementById('btn-theme').addEventListener('click', cycleCosmicTheme);
 
     document.getElementById('btn-hit').addEventListener('click', () => {
-      triggerTableTennisHit('smash', 0);
+      // Force an immediate jump to the next planet impact!
+      rallyProgress = 0.99;
     });
 
     const btnSound = document.getElementById('btn-sound');
@@ -2155,13 +2469,14 @@ html_code = '''<!DOCTYPE html>
       if (e.key === '1') focusPlanet('singles');
       if (e.key === '2') focusPlanet('doubles');
       if (e.key === '3') focusPlanet('prep');
+      if (e.key === 'b' || e.key === 'B') cycleCosmicTheme();
       if (e.key === 'Escape') {
         closeModal();
         lightbox.classList.remove('active');
       }
       if (e.key === ' ') {
         e.preventDefault();
-        triggerTableTennisHit('smash', 0);
+        rallyProgress = 0.99;
       }
     });
 
@@ -2181,4 +2496,4 @@ paths = [
 for p in paths:
     with open(p, 'w', encoding='utf-8') as f:
         f.write(html_code)
-    print(f"Deployed Uncropped + Signature HTML -> {p} ({os.path.getsize(p)/1024:.2f} KB)")
+    print(f"Deployed Dynamic BG + 3-Planet Rally HTML -> {p} ({os.path.getsize(p)/1024:.2f} KB)")
