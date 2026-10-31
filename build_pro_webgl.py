@@ -1050,6 +1050,96 @@ html_code = '''<!DOCTYPE html>
       color: #ffd700;
     }
 
+    /* Official Implementation Plan Document Box (連江縣體育會115年「體育季」桌球錦標賽實施計劃) */
+    .plan-document-section {
+      background: linear-gradient(145deg, rgba(14, 24, 48, 0.96) 0%, rgba(6, 11, 24, 0.99) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.55);
+      border-left: 5px solid #ffd700;
+      border-radius: 14px;
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 215, 0, 0.12);
+    }
+
+    .plan-doc-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .plan-doc-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffffff 0%, #ffe680 60%, #ffd700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .plan-doc-org {
+      font-size: 13px;
+      font-weight: 900;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      padding: 5px 14px;
+      border-radius: 20px;
+      letter-spacing: 1.5px;
+    }
+
+    .plan-sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .plan-block {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(0, 240, 255, 0.18);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .plan-block.full-width {
+      grid-column: 1 / -1;
+      border-color: rgba(255, 215, 0, 0.32);
+      background: rgba(255, 215, 0, 0.03);
+    }
+
+    .plan-block-heading {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.8px;
+      border-bottom: 1px dashed rgba(0, 240, 255, 0.28);
+      padding-bottom: 6px;
+      margin-bottom: 2px;
+    }
+
+    .plan-block.full-width .plan-block-heading {
+      color: #ffd700;
+      border-bottom-color: rgba(255, 215, 0, 0.35);
+    }
+
+    .plan-block-line {
+      font-size: 14px;
+      color: #f1f5f9;
+      line-height: 1.75;
+      font-weight: 500;
+    }
+
     /* Lightbox Fullscreen Preview */
     .lightbox-overlay {
       position: fixed;
@@ -1084,6 +1174,9 @@ html_code = '''<!DOCTYPE html>
     /* Responsive Mobile / Tablet */
     @media (max-width: 900px) {
       .podium-grid {
+        grid-template-columns: 1fr;
+      }
+      .plan-sections-grid {
         grid-template-columns: 1fr;
       }
       .card-photo-box, .dual-photo-box {
@@ -1172,7 +1265,7 @@ html_code = '''<!DOCTYPE html>
       <div class="spatial-pill">
         <span class="spatial-dot" style="background:#ffd700;box-shadow:0 0 8px #ffd700;"></span>
         <span class="spatial-title">賽事籌備與大會星</span>
-        <span class="spatial-champ">🛡️ 南竿體育館</span>
+        <span class="spatial-champ">🛡️ 南竿鄉復興牛角廟下方活動中心</span>
       </div>
       <div class="spatial-stem"></div>
     </div>
@@ -1186,7 +1279,7 @@ html_code = '''<!DOCTYPE html>
         <div class="badge-year">115年度</div>
         <div class="title-box">
           <h1>連江縣體育季桌球錦標賽</h1>
-          <p>3D COSMIC ARENA ｜ 馬祖南竿體育館 榮耀星際殿堂</p>
+          <p>3D COSMIC ARENA ｜ 南竿鄉復興牛角廟下方活動中心 榮耀星際殿堂</p>
         </div>
       </div>
 
@@ -1209,6 +1302,10 @@ html_code = '''<!DOCTYPE html>
 
         <button class="btn-icon" id="btn-hit" title="擊球加速模擬 (Space)">
           <span>🏓 擊球模擬</span>
+        </button>
+
+        <button class="btn-icon" id="btn-plan" title="檢視連江縣體育會115年「體育季」桌球錦標賽實施計劃" style="border-color: rgba(255,215,0,0.55); color: #ffd700;">
+          <span>📋 實施計劃</span>
         </button>
 
         <button class="btn-icon" id="btn-reset" title="重置為全景視角">
@@ -2491,13 +2588,46 @@ html_code = '''<!DOCTYPE html>
         `;
       }
 
+      let planHtml = '';
+      if (TOURNAMENT_DATA.implementation_plan) {
+        const plan = TOURNAMENT_DATA.implementation_plan;
+        const blocksHtml = plan.sections.map((sec, idx) => {
+          const isFull = idx >= 2;
+          const linesHtml = sec.content.map(line => `<div class="plan-block-line">${line}</div>`).join('');
+          return `
+            <div class="plan-block ${isFull ? 'full-width' : ''}">
+              <div class="plan-block-heading">${sec.heading}</div>
+              ${linesHtml}
+            </div>
+          `;
+        }).join('');
+
+        planHtml = `
+          <div class="plan-document-section" id="official-plan-box">
+            <div class="plan-doc-header">
+              <div class="plan-doc-title">📋 ${plan.title}</div>
+              <div class="plan-doc-org">承辦單位：${plan.organizer}</div>
+            </div>
+            <div class="plan-sections-grid">
+              ${blocksHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      // Show implementation plan at the top for 'prep' planet, and at the bottom of singles/doubles for quick reference
+      const topPlanHtml = (key === 'prep') ? planHtml : '';
+      const bottomPlanHtml = (key !== 'prep') ? planHtml : '';
+
       modalContent.innerHTML = `
         <div class="modal-lead-desc">${data.desc}</div>
+        ${topPlanHtml}
         <div class="podium-grid">
           ${podiumCardsHtml}
         </div>
         ${extraSection}
-        <div class="modal-footer-signature">🏓 連江縣桌球委員會 敬賀</div>
+        ${bottomPlanHtml}
+        <div class="modal-footer-signature">🏓 連江縣桌球委員會 敬賀 ｜ 比賽地點：連江縣南竿鄉復興牛角廟下方活動中心</div>
       `;
 
       modal.classList.add('open');
@@ -2544,6 +2674,12 @@ html_code = '''<!DOCTYPE html>
 
     /* Header Controls */
     document.getElementById('btn-reset').addEventListener('click', resetCamera);
+    const btnPlanEl = document.getElementById('btn-plan');
+    if (btnPlanEl) {
+      btnPlanEl.addEventListener('click', () => {
+        focusPlanet('prep');
+      });
+    }
     document.getElementById('btn-theme').addEventListener('click', cycleCosmicTheme);
 
     document.getElementById('btn-hit').addEventListener('click', () => {
